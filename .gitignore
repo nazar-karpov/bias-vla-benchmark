@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# ML артефакты (крупные — не в гит)
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.h5
+data/**/*.bin
+data/**/*.npz
+data/**/*.hdf5
+*.mp4
+*.avi
+
+# результаты прогонов (крупные логи/выгрузки)
+results/**/raw/
+wandb/
+runs/
+*.log
+
+# ОС / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# секреты
+.env
+*.key

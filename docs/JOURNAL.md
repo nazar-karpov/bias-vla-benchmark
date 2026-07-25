@@ -73,3 +73,40 @@
 
 **Дальше:** поставить менеджер окружения (miniconda/uv) и развернуть SimplerEnv по
 инструкции репозитория; затем прогнать их пример, чтобы убедиться в headless-рендере.
+
+---
+
+## 2026-07-25 — Развёрнут SimplerEnv, smoke-test зелёный
+
+**Контекст:** развернуть SimplerEnv в отдельном окружении внутри папки проекта и
+убедиться, что headless-рендер реально работает на сервере.
+
+**Сделано (подробно — `docs/SIMPLER_SETUP.md`):**
+- Miniconda в `~/bias_benchmark/miniconda3`, окружение `simpler_env` (Python 3.10.20).
+- Клон `SimplerEnv` + сабмодуль `ManiSkill2_real2sim` в `~/bias_benchmark/SimplerEnv`.
+- Установка numpy 1.24.4 → ManiSkill2_real2sim (`-e`) → simpler_env (`-e`).
+- Разрулил два подводных камня (см. ниже).
+
+**Результат:**
+- Smoke-test зелёный: `simpler_env.make("google_robot_pick_coke_can")` создаётся,
+  `reset()` ок, наблюдение **512×640×3 uint8** приходит с GPU через Vulkan,
+  инструкция читается ("pick coke can"). Всего 25 задач.
+- Прямой тест SAPIEN-рендера тоже ок (кадр 128×128×4 с GPU).
+- **Подводные камни (зафиксированы, чтобы не ловить снова):**
+  1. numpy откатывается на 2.x при установке зависимостей → пиннить `numpy==1.24.4`
+     последним шагом.
+  2. `pkg_resources` отсутствует при импорте SAPIEN (setuptools≥81 его выпилил) →
+     `pip install "setuptools<81"`.
+  3. `GLFW error: DISPLAY missing` — норма для headless, не ошибка.
+- Версии: sapien 2.2.2, mani_skill2_real2sim 0.5.3, simpler_env 0.0.1.
+- **torch не ставился** — нужен только для инференса VLA-моделей, поставим под
+  конкретную модель.
+
+**Дальше:** определиться с первой VLA-моделью для прогона (RT-1 / Octo / OpenVLA) и
+поставить её зависимости; затем прогнать полную оценку на задаче SIMPLER. Параллельно
+— сформулировать, какой именно bias меряем.
+
+**Превью сцен:** отрендерил 4 задачи (`docs/images/sim_preview.png`) —
+google_robot_pick_coke_can, google_robot_move_near, widowx_spoon_on_towel,
+widowx_put_eggplant_in_basket. Real2sim-рендер фотореалистичный; удобно, что можно
+менять объекты/цвета/позиции/фон — это прямой рычаг для измерения bias.

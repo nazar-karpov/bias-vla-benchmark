@@ -19,8 +19,10 @@ Vision-Language-Action (VLA) моделей.
 .
 ├── README.md          # этот файл — общая карта проекта
 ├── docs/
-│   ├── JOURNAL.md      # хронологический журнал: решения, эксперименты, результаты
-│   └── INFRA.md        # инфраструктура: сервер, доступы (секреты — в .env)
+│   ├── JOURNAL.md         # хронологический журнал: решения, эксперименты, результаты
+│   ├── INFRA.md           # инфраструктура: сервер, доступы (секреты — в .env)
+│   ├── SIMPLER_SETUP.md   # как развёрнут SimplerEnv + подводные камни
+│   └── images/            # превью сцен и т.п.
 ├── experiments/        # код и конфиги экспериментов (появится по ходу)
 ├── data/               # датасеты, промпты, сцены (появится по ходу)
 └── results/            # выгрузки метрик, таблицы, графики (появится по ходу)
@@ -53,3 +55,7 @@ Vision-Language-Action (VLA) моделей.
   настроен доступ к серверу прогонов (`176.109.107.137`, см. [docs/INFRA.md](docs/INFRA.md)).
 - **2026-07-25** — выбрали **SimplerEnv** для симуляции; осмотрели сервер
   (4× Tesla V100, Ubuntu 24.04) и подтвердили **рабочий Vulkan** для SAPIEN.
+- **2026-07-25** — развернули SimplerEnv в `~/bias_benchmark` (conda `simpler_env`,
+  Python 3.10); smoke-test зелёный, 25 задач, headless-рендер с GPU работает
+  (см. [docs/SIMPLER_SETUP.md](docs/SIMPLER_SETUP.md) и превью
+  [docs/images/sim_preview.png](docs/images/sim_preview.png)).

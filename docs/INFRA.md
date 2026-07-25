@@ -56,3 +56,13 @@ SIMPLER рендерит сцены через SAPIEN, которому нуже
 
 **Вывод:** железо готово к SIMPLER. GPU для рендера можно выбирать через
 переменные окружения (напр. `CUDA_VISIBLE_DEVICES`), т.к. карт четыре.
+
+Развёртывание SimplerEnv и smoke-test — см. [SIMPLER_SETUP.md](SIMPLER_SETUP.md).
+
+### Копирование файлов сервер↔локально (Windows)
+
+```bash
+# скачать с сервера:
+"/c/Program Files/PuTTY/pscp" -batch -hostkey "SHA256:mPAyR5qRJyB/LisWN0dohNx8eQXYkVwFlmdTha3/lXs" \
+    -pw "<SERVER_PASSWORD>" User17@176.109.107.137:/путь/на/сервере ./локально
+```

@@ -1,0 +1,91 @@
+# ============================================================
+#  BiasVLA — только КОД. Данные/меши/медиа/веса — не в репо.
+# ============================================================
+
+# ----- Чистые клоны upstream (клонировать отдельно, см. README) -----
+/SimplerEnv/
+/RL4VLA/
+
+# ----- Вложенные .git апстримов (файлы храним, историю — нет) -----
+.git/
+!/.git/
+
+# ----- 3D-меши и ассеты (данные, НЕ код) -----
+*.glb
+*.obj
+*.ply
+*.stl
+*.dae
+*.usd
+*.usda
+*.mtl
+*.hdr
+*.exr
+
+# ----- Изображения / медиа -----
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# ----- Датасеты / выгрузки (данные, НЕ код) -----
+*.csv
+*.parquet
+*.tfrecord*
+*.jsonl
+imgs/
+images/
+raw/
+outputs/
+datasets/
+
+# ----- ML-веса / крупные бинарники -----
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.h5
+*.npz
+*.npy
+*.bin
+*.hdf5
+*.pkl
+*.pickle
+
+# ----- Логи -----
+*.log
+
+# ----- Бэкапы -----
+*.bak
+*.bak_*
+
+# ----- Python мусор -----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# ----- ОС / IDE -----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ----- Секреты -----
+.env
+*.key
+
+# спрятанные .git апстримов
+*_HIDDEN_FOR_PUSH/
+.git_HIDDEN_FOR_PUSH/
+
+**/*_HIDDEN_FOR_PUSH/

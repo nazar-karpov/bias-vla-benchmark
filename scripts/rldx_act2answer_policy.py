@@ -11,12 +11,20 @@ Contract mirrors SimplerEnv's other policies (see internvla.py / magma_model.py)
     obs["task_description"] : list[str] length B
     return per env: [world_vector(3), rot_axangle(3), gripper(1)]
 
-RLDX returns an *action chunk* (several timesteps) per query; Act2Answer calls
-get_action every sim step, so we keep a per-env chunk buffer and re-query only when
-it drains. Obs/action packing follows RLDX's own widowx SimplerEnv wrapper.
+RLDX server obs (embodiment `bridge_orig`, from processor_config.json) is a NESTED,
+BATCHED, TEMPORAL dict:
+  video.image_0 : uint8 (B, T=4, H, W, 3)  at delta_indices [-6,-4,-2,0]
+  state.{end_effector_position(3), end_effector_rotation(3 euler), gripper_position(1)}
+                : float32 (B, T=1, D)
+  language.annotation.human.action.task_description : list[list[str]] (B, 1)
+Server returns (action_dict, info); action keys (delta, chunk of 16):
+  end_effector_position(3), end_effector_rotation(3 euler delta), gripper_close(1).
 
-Drop into: SimplerEnv/simpler_env/policies/rldx/rldx.py  (+ empty __init__.py)
-and wire `--vla rldx` in run.py to `RLDXInference`.
+We keep a per-env frame ring buffer (last 7 frames) to satisfy the [-6,-4,-2,0]
+video offsets, and a per-env action-chunk buffer (query once, pop one step at a
+time). euler delta -> axangle; gripper_close -> widowx [-1,1] sticky.
+
+Installed on the server as: SimplerEnv/.../policies/rldx/rldx.py (+ empty __init__).
 """
 from __future__ import annotations
 
@@ -27,7 +35,6 @@ import cv2
 import msgpack
 import numpy as np
 import torch
-import zmq
 from transforms3d.euler import euler2axangle
 
 
@@ -57,15 +64,17 @@ def _from_bytes(data: bytes):
 class _RLDXClient:
     """Minimal zmq REQ client for the RLDX PolicyServer (matches PolicyClient)."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 20000, timeout_ms: int = 120000):
+    def __init__(self, host: str = "127.0.0.1", port: int = 20000, timeout_ms: int = 180000):
+        import zmq
+        self._zmq = zmq
         self.host, self.port, self.timeout_ms = host, port, timeout_ms
         self.ctx = zmq.Context.instance()
         self._connect()
 
     def _connect(self):
-        self.sock = self.ctx.socket(zmq.REQ)
-        self.sock.setsockopt(zmq.RCVTIMEO, self.timeout_ms)
-        self.sock.setsockopt(zmq.LINGER, 0)
+        self.sock = self.ctx.socket(self._zmq.REQ)
+        self.sock.setsockopt(self._zmq.RCVTIMEO, self.timeout_ms)
+        self.sock.setsockopt(self._zmq.LINGER, 0)
         self.sock.connect(f"tcp://{self.host}:{self.port}")
 
     def call(self, endpoint: str, data: dict | None = None, requires_input: bool = True):
@@ -87,65 +96,83 @@ class _RLDXClient:
     def reset(self, options: dict | None = None):
         return self.call("reset", {"options": options})
 
-    def ping(self) -> bool:
-        try:
-            self.call("ping", requires_input=False)
-            return True
-        except zmq.error.ZMQError:
-            self.sock.close(); self._connect()
-            return False
-
 
 # ------------------------------------------------------------------- policy ---
-_IMG_H, _IMG_W = 256, 320   # RLDX widowx image_size (rows, cols)
-_ACTION_KEYS = ("action.x", "action.y", "action.z",
-                "action.roll", "action.pitch", "action.yaw", "action.gripper")
+_IMG_H, _IMG_W = 256, 320           # RLDX widowx image_size (rows, cols)
+_VIDEO_KEY = "image_0"
+_VIDEO_DELTAS = [-6, -4, -2, 0]     # bridge_orig video delta_indices (T=4)
+_RING = 7                           # need frames back to t-6
+_ACT_POS, _ACT_ROT, _ACT_GRIP = "end_effector_position", "end_effector_rotation", "gripper_close"
 
 
 class RLDXInference:
     """RLDX-1 client policy with the SimplerEnv get_action(obs) contract."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 20000, policy_setup: str = "widowx_bridge"):
-        assert policy_setup == "widowx_bridge", "RLDX Act2Answer client is wired for widowx only"
+        assert policy_setup == "widowx_bridge", "RLDX Act2Answer client is wired for widowx (bridge_orig)"
         self.policy_setup = policy_setup
         self.client = _RLDXClient(host, port)
         self.client.reset()
-        # per-env chunk buffers + sticky-gripper state (widowx: repeat 1)
-        self._chunks: dict[int, deque] = {}
+        self._first_step: dict[int, bool] = {}   # per-env: is this the first query?
+        self._frames: dict[int, deque] = {}     # per-env ring buffer of resized frames
+        self._chunks: dict[int, deque] = {}      # per-env action-chunk buffer
         self._sticky_on: dict[int, bool] = {}
         self._sticky_val: dict[int, float] = {}
         self._sticky_rep: dict[int, int] = {}
-        self.sticky_num_repeat = 1
+        self.sticky_num_repeat = 1               # widowx
 
     # ---- required by run.py's render loop -----------------------------------
     def prep_rollout(self):
         self.client.reset()
-        self._chunks.clear()
+        self._first_step.clear()
+        self._frames.clear(); self._chunks.clear()
         self._sticky_on.clear(); self._sticky_val.clear(); self._sticky_rep.clear()
+
+    @staticmethod
+    def _sid(env_i: int) -> str:
+        return f"a2a-env-{env_i}"
 
     def reset(self, task_description=None):
         self.prep_rollout()
 
-    # ---- obs packing (mirrors RLDX widowx SimplerEnv wrapper) ----------------
-    @staticmethod
-    def _pack_obs(image_hw3_uint8: np.ndarray, instruction: str) -> dict:
-        img = cv2.resize(image_hw3_uint8, (_IMG_W, _IMG_H))  # (cols, rows)
-        # proprio is unknown from Act2Answer's obs at this layer; RLDX-SIMPLER
-        # widowx uses eef state, but the released policy tolerates a neutral
-        # state (identity quat, open gripper) -- the visual+language stream
-        # drives the choice, which is what this bias probe measures.
+    # ---- obs packing (nested/batched/temporal, bridge_orig) ------------------
+    def _video_stack(self, env_i: int, frame_hw3: np.ndarray) -> np.ndarray:
+        """Push newest frame; return (T=4, H, W, 3) at deltas [-6,-4,-2,0]."""
+        ring = self._frames.get(env_i)
+        if ring is None:
+            ring = deque(maxlen=_RING)
+            self._frames[env_i] = ring
+        ring.append(frame_hw3)
+        # index from the newest: offset 0 = last, -2 = 2 steps back, etc.
+        out = []
+        for d in _VIDEO_DELTAS:            # d in {-6,-4,-2,0}
+            idx = -1 + d                   # position from the end
+            if -idx <= len(ring):
+                out.append(ring[idx])
+            else:
+                out.append(ring[0])        # pad with the oldest available frame
+        return np.stack(out).astype(np.uint8)
+
+    def _pack_obs(self, env_i: int, image_hw3_uint8: np.ndarray, instruction: str) -> dict:
+        frame = cv2.resize(image_hw3_uint8, (_IMG_W, _IMG_H)).astype(np.uint8)  # (cols,rows)
+        vid = self._video_stack(env_i, frame)[None]        # (B=1, T=4, H, W, 3)
+        z3 = np.zeros((1, 1, 3), dtype=np.float32)
         return {
-            "video.image": img.astype(np.uint8),
-            "state.x": [0.0], "state.y": [0.0], "state.z": [0.0],
-            "state.rx": [0.0], "state.ry": [0.0], "state.rz": [0.0], "state.rw": [1.0],
-            "state.gripper": [0.0],
-            "annotation.human.action.task_description": instruction,
+            "video": {_VIDEO_KEY: vid},
+            "state": {
+                "end_effector_position": z3.copy(),
+                "end_effector_rotation": z3.copy(),      # neutral euler (0,0,0)
+                "gripper_position": np.zeros((1, 1, 1), dtype=np.float32),
+            },
+            "language": {"annotation.human.action.task_description": [[instruction]]},
         }
 
-    def _postprocess_gripper(self, env_i: int, g01: float) -> float:
-        # [0,1] -> [-1,1], relative, sticky (identical to RLDX widowx wrapper)
-        cur = (g01 * 2.0) - 1.0
-        rel = -cur
+    def _postprocess_gripper(self, env_i: int, g_close: float) -> float:
+        # RLDX action `gripper_close` in [0,1] (1=close). widowx wants [-1,1] where
+        # -1=open/1=close relative, with sticky repeat. Mirror RLDX widowx wrapper:
+        # wrapper feeds raw gripper then sticky; here gripper_close already ~[0,1].
+        cur = (g_close * 2.0) - 1.0
+        rel = cur
         if abs(rel) > 0.5 and not self._sticky_on.get(env_i, False):
             self._sticky_on[env_i] = True
             self._sticky_val[env_i] = rel
@@ -159,23 +186,38 @@ class RLDXInference:
         return rel
 
     def _next_action_vec(self, env_i: int, image: np.ndarray, instruction: str) -> np.ndarray:
-        """Return one 7-vec [wx,wy,wz, ax,ay,az, gripper] for env_i."""
         buf = self._chunks.get(env_i)
         if not buf:
-            action, _info = self.client.get_action(self._pack_obs(image, instruction))
-            # action[key] is a 1-D array over the chunk horizon
-            horizon = len(np.atleast_1d(action[_ACTION_KEYS[0]]))
+            is_first = self._first_step.get(env_i, True)
+            self._first_step[env_i] = False
+            options = {"reset_memory": [is_first], "session_ids": [self._sid(env_i)]}
+            action, _info = self.client.get_action(
+                self._pack_obs(env_i, image, instruction), options=options
+            )
+            # server returns batched actions (B=1, chunk, D); drop the batch axis.
+            pos = np.asarray(action[_ACT_POS], dtype=np.float64)
+            rot = np.asarray(action[_ACT_ROT], dtype=np.float64)
+            grip = np.asarray(action[_ACT_GRIP], dtype=np.float64)
+            if pos.ndim == 3:   # (B, chunk, 3) -> (chunk, 3)
+                pos, rot = pos[0], rot[0]
+                grip = grip[0]
+            pos = np.atleast_2d(pos)          # (chunk, 3)
+            rot = np.atleast_2d(rot)          # (chunk, 3)
+            grip = grip.reshape(-1)           # (chunk,)
+            horizon = pos.shape[0]
             buf = deque()
             for t in range(horizon):
-                buf.append({k: float(np.atleast_1d(action[k])[t]) for k in _ACTION_KEYS})
+                buf.append((pos[t], rot[t], float(grip[t]) if t < len(grip) else float(grip[-1])))
             self._chunks[env_i] = buf
-        a = buf.popleft()
+        else:
+            # still advance the frame buffer even when replaying a cached chunk
+            self._video_stack(env_i, cv2.resize(image, (_IMG_W, _IMG_H)).astype(np.uint8))
+        pos, rot_euler, g = buf.popleft()
 
-        world = np.array([a["action.x"], a["action.y"], a["action.z"]], dtype=np.float64)
-        axes, ang = euler2axangle(a["action.roll"], a["action.pitch"], a["action.yaw"])
+        axes, ang = euler2axangle(rot_euler[0], rot_euler[1], rot_euler[2])
         rot_axangle = axes * ang
-        grip = self._postprocess_gripper(env_i, a["action.gripper"])
-        return np.concatenate([world, rot_axangle, [grip]]).astype(np.float32)
+        grip = self._postprocess_gripper(env_i, g)
+        return np.concatenate([pos, rot_axangle, [grip]]).astype(np.float32)
 
     @torch.no_grad()
     def get_action(self, obs, deterministic: bool = True) -> torch.Tensor:

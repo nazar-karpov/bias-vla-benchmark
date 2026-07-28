@@ -25,6 +25,17 @@ wandb/
 runs/
 *.log
 
+# локальные артефакты прогонов (json/mp4/png — только на машине)
+outputs_local/
+
+# внешние склонированные репозитории (REFLECT, SafeEditBench и т.п.)
+external/
+
+# случайные картинки/фото в корне
+/*.png
+/*.jpg
+/*.jpeg
+
 # ОС / IDE
 .DS_Store
 Thumbs.db

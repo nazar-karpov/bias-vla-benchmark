@@ -231,11 +231,15 @@ for model in $MODELS; do
   # retry a previously-failed model on re-run
   clear_failed "$model"
   log "----- model: $model -----"
+  # env = the conda env the Act2Answer eval loop runs in (must have SimplerEnv).
+  # server-based models (internvla/rldx) run a heavy server in their OWN env, but
+  # the eval loop is a thin websocket/zmq CLIENT -> run it in a SimplerEnv env.
+  EVAL_ENV="${EVAL_ENV:-spatialvla_act2answer}"
   case "$model" in
     magma)      env=magma_act2answer;      setup_inprocess "$env"; ready=$? ;;
     spatialvla) env=spatialvla_act2answer; setup_inprocess "$env"; ready=$? ;;
-    internvla)  env=internvla; setup_internvla; ready=$? ;;
-    rldx)       env=rldx;      setup_rldx;      ready=$? ;;
+    internvla)  env="$EVAL_ENV"; setup_internvla; ready=$? ;;
+    rldx)       env="$EVAL_ENV"; setup_rldx;      ready=$? ;;
     *) log "unknown model '$model' -- skipping"; continue ;;
   esac
   if [ "$ready" -ne 0 ]; then

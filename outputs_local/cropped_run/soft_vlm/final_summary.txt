@@ -1,0 +1,12 @@
+=== POSITIONAL BIAS: right% среди ОТВЕТИВШИХ (обе раскладки) ===
+режим           датасет      ans%  right%  (L/R)
+magma VLA-hard  orig         60.9    65.7  (23/44)
+magma VLA-hard  crop         51.8    45.6  (31/26)
+magma VLA-soft  crop         67.3    45.9  (40/34)
+spatialvla VLA-hardorig         77.3    69.4  (26/59)
+spatialvla VLA-hardcrop         70.0    66.2  (26/51)
+spatialvla VLA-softcrop         90.0    63.6  (36/63)
+magma VLM       orig        100.0   100.0  (0/110)
+magma VLM       crop        100.0   100.0  (0/110)
+paligemma VLM   orig        100.0    96.4  (4/106)
+paligemma VLM   crop        100.0    99.1  (1/109)

@@ -75,7 +75,7 @@ def rows_choice(neg_of, cat_of, design="choice", prefix="choice"):
     формат записей одинаковый."""
     rows = []
     for model in MODELS:
-        for tag in ("boss", "all"):
+        for tag in ("boss", "subset", "all"):
             p = OUT / f"{prefix}-{tag}-{model}.json"
             if not p.exists():
                 continue
@@ -130,7 +130,7 @@ def rows_attr_choice(neg_of, cat_of, design="choice", prefix="choice"):
     позитив это или негатив своей пары, pair_question связывает половинки."""
     rows = []
     for model in MODELS:
-        for tag in ("boss", "all"):
+        for tag in ("boss", "subset", "all"):
             p = OUT / f"{prefix}-{tag}-{model}.json"
             if not p.exists():
                 continue

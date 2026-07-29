@@ -907,6 +907,10 @@ class Act2AnswerV4(_PickCubeBase):
         success = torch.zeros((b,), dtype=torch.bool, device=device)
         is_answered = torch.zeros((b,), dtype=torch.bool, device=device)
         chosen_side = torch.zeros((b,), dtype=torch.long, device=device)  # 0=none 1=left 2=right (BIAS metric)
+        chosen_side_soft = torch.zeros((b,), dtype=torch.long, device=device)  # 0=none 1=left 2=right (SOFT)
+        first_touch = self.episode_stats.get(
+            "first_touch_side", torch.zeros((b,), dtype=torch.long, device=device)
+        )  # защёлка: первое касание отпущенным кубиком
 
         # existing cube-based soft metrics
         is_success_soft_v1 = torch.zeros((b,), dtype=torch.bool, device=device)
@@ -998,6 +1002,39 @@ class Act2AnswerV4(_PickCubeBase):
             success[i] = on_left if ans == "left" else on_right
             is_answered[i] = on_left or on_right
             chosen_side[i] = 1 if on_left else (2 if on_right else 0)  # BIAS: which tile cube landed on
+            # засчитываем касание только ПОСЛЕ того, как кубик был поднят:
+            # на старте он и так лежит в допуске правой плитки
+            _was_grasped = bool(self.episode_stats["is_src_obj_grasped"][i])
+            if int(first_touch[i]) == 0 and _was_grasped and not bool(is_grasped[i]):
+                if on_left:
+                    first_touch[i] = 1
+                elif on_right:
+                    first_touch[i] = 2
+
+            # SOFT: кубик отпущен и лежит в окрестности картинки —
+            # габариты плитки, расширенные на треть её длины с каждой стороны.
+            # Высота не проверяется: годится и «на фото», и «на столе рядом».
+            def near_board(board_name: str):
+                """(попал ли в окрестность, расстояние по xy до центра плитки)"""
+                bp = self.objs_board[board_name].pose.p[i]
+                size = self.model_bbox_sizes[board_name]
+                sx, sy = float(size[0].item()), float(size[1].item())
+                ddx = abs(float(cube_p[i][0] - bp[0]))
+                ddy = abs(float(cube_p[i][1] - bp[1]))
+                inside = (ddx <= sx / 2.0 + sx / 3.0) and (ddy <= sy / 2.0 + sy / 3.0)
+                return inside, (ddx * ddx + ddy * ddy) ** 0.5
+
+            if not bool(is_grasped[i]):
+                near_l, dist_l = near_board(left_name)
+                near_r, dist_r = near_board(right_name)
+                soft_l = on_left or near_l          # hard всегда входит в soft
+                soft_r = on_right or near_r
+                if soft_l and soft_r:
+                    chosen_side_soft[i] = 1 if dist_l <= dist_r else 2
+                elif soft_l:
+                    chosen_side_soft[i] = 1
+                elif soft_r:
+                    chosen_side_soft[i] = 2
 
             # existing cube soft metrics (your originals)
             cube_y = float(cube_p[i][1])
@@ -1174,6 +1211,8 @@ class Act2AnswerV4(_PickCubeBase):
         # ------------------------
         self.episode_stats["is_answered"] = is_answered
         self.episode_stats["chosen_side"] = chosen_side  # BIAS metric per-episode
+        self.episode_stats["chosen_side_soft"] = chosen_side_soft  # SOFT per-episode
+        self.episode_stats["first_touch_side"] = first_touch  # первое касание
         self.episode_stats["is_success"] = success
         self.episode_stats["is_success_soft_v1"] = is_success_soft_v1
 

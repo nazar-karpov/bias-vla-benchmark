@@ -246,6 +246,10 @@ class Runner:
             from simpler_env.policies.xiaomi.xiaomi import XiaomiRoboticsPolicy
 
             self.policy = XiaomiRoboticsPolicy()
+        elif all_args.vla_kind == "xvla":
+            from simpler_env.policies.xvla.xvla import XVLAPolicy
+
+            self.policy = XVLAPolicy()
         elif all_args.vla_kind == "molmoact":
             from simpler_env.policies.molmoact.molmoact import MolmoActPolicy
 
@@ -379,7 +383,9 @@ class Runner:
         for idx in range(self.args.num_envs):
             final = datas[idx]["info"][-1]
             entry = {k: env_infos[k][idx] for k in env_infos.keys()}
-            for extra in ("chosen_side", "is_answered"):
+            for extra in ("chosen_side", "chosen_side_soft", "first_touch_side", "is_answered",
+                          "is_success_soft_v1", "tcp_first_choice_correct",
+                          "tcp_closer_to_target_than_wrong", "is_src_obj_grasped"):
                 if extra in final:
                     entry[extra] = final[extra]
             last_info[idx] = entry

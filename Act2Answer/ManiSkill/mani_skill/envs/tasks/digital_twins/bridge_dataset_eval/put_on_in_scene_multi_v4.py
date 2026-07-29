@@ -907,6 +907,11 @@ class Act2AnswerV4(_PickCubeBase):
         success = torch.zeros((b,), dtype=torch.bool, device=device)
         is_answered = torch.zeros((b,), dtype=torch.bool, device=device)
         chosen_side = torch.zeros((b,), dtype=torch.long, device=device)  # 0=none 1=left 2=right (BIAS metric)
+        # SOFT-ANSWER (a2a): same on-board test but with an enlarged xy margin.
+        SOFT_MARGIN = 0.16  # 2x the hard margin (0.08); cube "near" a tile counts as choosing it
+        is_answered_soft = torch.zeros((b,), dtype=torch.bool, device=device)
+        chosen_side_soft = torch.zeros((b,), dtype=torch.long, device=device)
+        success_soft_answer = torch.zeros((b,), dtype=torch.bool, device=device)
 
         # existing cube-based soft metrics
         is_success_soft_v1 = torch.zeros((b,), dtype=torch.bool, device=device)
@@ -998,6 +1003,29 @@ class Act2AnswerV4(_PickCubeBase):
             success[i] = on_left if ans == "left" else on_right
             is_answered[i] = on_left or on_right
             chosen_side[i] = 1 if on_left else (2 if on_right else 0)  # BIAS: which tile cube landed on
+
+            # --- SOFT ANSWER: recompute on_board with the enlarged margin ---
+            def check_on_board_soft(board_name: str) -> bool:
+                board_actor = self.objs_board[board_name]
+                bp = board_actor.pose.p[i]
+                size = self.model_bbox_sizes[board_name]
+                half_x, half_y, half_z = size[0].item()/2.0, size[1].item()/2.0, size[2].item()/2.0
+                dx = abs(float(cube_p[i][0] - bp[0])); dy = abs(float(cube_p[i][1] - bp[1]))
+                dz = float(cube_p[i][2] - bp[2])
+                on_xy = (dx <= half_x + SOFT_MARGIN) and (dy <= half_y + SOFT_MARGIN)
+                above = dz >= (half_z + cube_half[i].item() - 0.03)  # also relax z a bit
+                return on_xy and above
+            on_left_soft = check_on_board_soft(left_name)
+            on_right_soft = check_on_board_soft(right_name)
+            # if near BOTH, pick the closer tile by xy distance
+            if on_left_soft and on_right_soft:
+                lp = self.objs_board[left_name].pose.p[i]; rp = self.objs_board[right_name].pose.p[i]
+                dl = (float(cube_p[i][0]-lp[0]))**2 + (float(cube_p[i][1]-lp[1]))**2
+                dr = (float(cube_p[i][0]-rp[0]))**2 + (float(cube_p[i][1]-rp[1]))**2
+                on_left_soft, on_right_soft = (dl<=dr, dl>dr)
+            is_answered_soft[i] = on_left_soft or on_right_soft
+            chosen_side_soft[i] = 1 if on_left_soft else (2 if on_right_soft else 0)
+            success_soft_answer[i] = on_left_soft if ans=="left" else on_right_soft
 
             # existing cube soft metrics (your originals)
             cube_y = float(cube_p[i][1])
@@ -1174,6 +1202,9 @@ class Act2AnswerV4(_PickCubeBase):
         # ------------------------
         self.episode_stats["is_answered"] = is_answered
         self.episode_stats["chosen_side"] = chosen_side  # BIAS metric per-episode
+        self.episode_stats["is_answered_soft"] = is_answered_soft
+        self.episode_stats["chosen_side_soft"] = chosen_side_soft
+        self.episode_stats["success_soft_answer"] = success_soft_answer
         self.episode_stats["is_success"] = success
         self.episode_stats["is_success_soft_v1"] = is_success_soft_v1
 

@@ -94,6 +94,13 @@ VLA_CONFIGS: dict[str, VLAConfig] = {
         default_buffer_inferbatch=4,
         default_vla_path="",
     ),
+    "rldx": VLAConfig(
+        vla_kind="rldx",
+        default_assets="pairs_bias_crop",
+        default_count=9,
+        default_buffer_inferbatch=9,
+        default_vla_path="",
+    ),
 }
 
 

@@ -32,7 +32,7 @@ conda activate "$ENV_PATH"
 export PYTHONNOUSERSITE=1
 
 retry pip4 install --upgrade pip wheel setuptools ninja packaging
-retry pip4 install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu121
+retry pip4 install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
 retry pip4 install -r "$REPO_ROOT/requirements/internvla_server.txt"
 retry pip4 install -r "$INTERNVLA_REPO/requirements.txt"
 retry pip4 install -e "$INTERNVLA_REPO" --no-deps

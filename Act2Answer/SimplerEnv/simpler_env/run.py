@@ -254,6 +254,13 @@ class Runner:
             from simpler_env.policies.pi0.pi0_adapter import Pi0Inference
 
             self.policy = Pi0Inference(all_args, device_id_other)
+        elif all_args.vla_kind == "rldx":
+            from simpler_env.policies.rldx.rldx import RLDXInference
+
+            policy_setup = "widowx_bridge"
+            host = os.environ.get("RLDX_HOST", "127.0.0.1")
+            port = int(os.environ.get("RLDX_PORT", "20000"))
+            self.policy = RLDXInference(host=host, port=port, policy_setup=policy_setup)
         else:
             raise ValueError("Unknown VLA kind")
 
@@ -379,7 +386,7 @@ class Runner:
         for idx in range(self.args.num_envs):
             final = datas[idx]["info"][-1]
             entry = {k: env_infos[k][idx] for k in env_infos.keys()}
-            for extra in ("chosen_side", "is_answered"):
+            for extra in ("chosen_side", "is_answered", "is_answered_soft", "chosen_side_soft", "success_soft_answer"):
                 if extra in final:
                     entry[extra] = final[extra]
             last_info[idx] = entry

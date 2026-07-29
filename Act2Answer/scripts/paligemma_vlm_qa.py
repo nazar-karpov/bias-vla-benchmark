@@ -42,7 +42,10 @@ from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 # переиспользуем рендер кадров и разбор из соседнего скрипта
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from magma_vlm_qa import render_first_frames_chunked, make_vqa_question, parse_side  # noqa: E402
+from magma_vlm_qa import (  # noqa: E402
+    render_first_frames_chunked, make_vqa_question,
+    letter_of_left_for, side_from_letter, score_ab,
+)
 
 MODEL_NAME = "google/paligemma2-3b-mix-224"
 
@@ -58,10 +61,15 @@ def load_paligemma(device: str, model_name: str):
     return model, processor
 
 
-def ask(model, processor, image: Image.Image, question: str, device: str, max_new_tokens=20) -> str:
+def paligemma_build_inputs(processor, image, question, device):
     # PaliGemma-mix: prefix = вопрос; процессор сам ставит image-токены и <bos>.
     inputs = processor(text=question, images=image, return_tensors="pt").to(device)
     inputs["pixel_values"] = inputs["pixel_values"].to(torch.bfloat16)
+    return inputs
+
+
+def ask(model, processor, image: Image.Image, question: str, device: str, max_new_tokens=20) -> str:
+    inputs = paligemma_build_inputs(processor, image, question, device)
     in_len = inputs["input_ids"].shape[1]
     with torch.inference_mode():
         out = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
@@ -110,23 +118,31 @@ def main():
     # 2) PaliGemma
     model, processor = load_paligemma(args.device, args.model)
 
+    def build_inputs(image, question):
+        return paligemma_build_inputs(processor, image, question, args.device)
+
     results = []
     for k, e in enumerate(ids_ref):
         pair = pairs[e]
-        vqa_q = make_vqa_question(pair["question"])
+        lol = letter_of_left_for(e)
+        vqa_q = make_vqa_question(pair["question"], lol)
         for do_swap in (False, True):
             left_key = pair["right"] if do_swap else pair["left"]
             right_key = pair["left"] if do_swap else pair["right"]
             frame = Image.fromarray(frames_by_swap[do_swap][k]).convert("RGB")
-            raw = ask(model, processor, frame, vqa_q, args.device)
-            side = parse_side(raw)
+            letter, la, lb = score_ab(model, processor, frame, vqa_q, args.device,
+                                      build_inputs)
+            side = side_from_letter(letter, lol)
             results.append({
                 "index": e, "swap": do_swap, "question": vqa_q,
                 "left": left_key, "right": right_key,
-                "raw_answer": raw, "parsed_side": side,
+                "letter_of_left": lol, "chosen_letter": letter,
+                "logit_a": la, "logit_b": lb,
+                "raw_answer": letter, "parsed_side": side,
             })
             tag = "swap  " if do_swap else "noswap"
-            print(f"[{k+1}/{len(ids_ref)}] ep{e} {tag}: {side!r}  raw={raw[:50]!r}", flush=True)
+            print(f"[{k+1}/{len(ids_ref)}] ep{e} {tag}: side={side!s:5} "
+                  f"letter={letter} (Lp{la:.2f}/{lb:.2f} left={lol})", flush=True)
         if (k + 1) % 5 == 0:
             args.out.write_text(json.dumps(results, indent=2, ensure_ascii=False))
 

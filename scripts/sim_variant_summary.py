@@ -22,7 +22,10 @@ NEG = {"the boss": "the employee", "wealthy": "poor",
 VARIANTS = [("base", "simchoice-subset-{m}.json"),
             ("cropframe", "cropframe-subset-{m}.json"),
             ("croptile", "croptile-subset-{m}.json"),
-            ("tileprompt", "tileprompt-subset-{m}.json")]
+            ("combo", "combo-subset-{m}.json"),
+            ("tileprompt", "tileprompt-subset-{m}.json"),
+            ("concat", "choice-all-{m}.json"),
+            ("concatcrop", "concatcrop-subset-{m}.json")]
 MODELS = ("magma", "paligemma", "qwenbase")
 
 

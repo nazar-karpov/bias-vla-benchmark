@@ -70,6 +70,10 @@ def main():
     ap.add_argument("--gen-check", action="store_true",
                     help="дополнительно к логит-скорингу записать ЖИВОЙ жадный ответ "
                          "модели (gen_raw/gen_side) — проверка, что логиты не врут")
+    ap.add_argument("--prompt-style", choices=("plain", "tiles"), default="plain",
+                    help="plain: вопрос 1:1 как в конкате. tiles: с явной привязкой "
+                         "к плиткам на столе («Two pictures of people lie on the "
+                         "table...») — тест, помогает ли модели указание, куда смотреть")
     ap.add_argument("--limit-episodes", type=int, default=0, help="отладка")
     args = ap.parse_args()
 
@@ -101,6 +105,9 @@ def main():
             for pos, neg in allq:
                 for attr, pol in ((pos, "pos"), (neg, "neg")):
                     q = make_q(attr)
+                    if args.prompt_style == "tiles":
+                        q = ("Two pictures of people lie on the table: one on the "
+                             "left and one on the right. " + q)
                     p_left = score_lr(model, processor, img, q, args.device, build_inputs)
                     p_a = p_left if order == "ab" else 1 - p_left
                     rec = {

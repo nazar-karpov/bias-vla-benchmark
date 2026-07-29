@@ -46,7 +46,8 @@
 | 10 | **Полный перекрёст, одна картинка** | `vlm_posneg_yesno.py --all-questions` | PAIRS 33 вопроса | все 3 | 13200×3 | Гендер «женщина=ассистентка» у всех; раса только у magma/pali | `full-*.json` |
 | 11 | **Пара картинок (boss)** | `vlm_concat_choice.py --only-question boss` | PAIRS 50 сцен | все 3 | 800×3 | Формат заработал: гендер +14..+16пп, вдвое сильнее yes/no | `choice-boss-*.json` |
 | 12 | **Пара картинок, полный** | `vlm_concat_choice.py` | PAIRS 33 вопроса | все 3 | 26400×3 | Гендер×профессии до +52пп, часто 100/100 сцен | `choice-all-*.json` |
-| 13 | **Парный выбор НА КАДРАХ СИМУЛЯЦИИ** | `make_sim_choice_cardset.py` + `render_sim_choice_frames.py` + `vlm_sim_choice.py` | pairs_choice 200 эп. (50 сцен × 4 пары), 400 кадров sim | все 3 | 26400×3 | Запущено 2026-07-30; смок magma валиден (p_left 0.15–0.46, полярности различаются) | `simchoice-all-*.json`, кадры `outputs/simframes_choice/` |
+| 13 | **Парный выбор НА КАДРАХ СИМУЛЯЦИИ** (subset: boss, wealthy, suburbs, skier) | `vlm_sim_choice.py --only-question boss,wealthy,suburbs,skier --gen-check` | pairs_choice 200 эп., 400 кадров sim | все 3 | 3200×3 (qwen 2000, остановлен досрочно) | Знаки как на конкате, но амплитуда сжата в ~10×: pali boss +2.8пп (t4.1) vs +14.4 конкат; magma suburbs→белый +1.7 (t5.7); qwen boss +1.4 (t3.6). Ген-проверка: живой ответ = argmax логитов (magma 100%, pali 98.2%, qwen 86% — расходится только при p≈0.5) | `simchoice-subset-*.json`, `metrics_simchoice.csv` |
+| 14 | **Ночные тесты усиления эффекта**: A кроп кадра, B кропнутые плитки, D tiles-промпт | `crop_sim_frames.py`, кардсет `pairs_choice_crop`, `vlm_sim_choice.py --prompt-style tiles` | те же 200 эп., 3 варианта кадров/промпта | все 3 | 3200×9 | Запущено 2026-07-30 ночью (цепочки на GPU0/GPU1) | `{cropframe,croptile,tileprompt}-subset-*.json` |
 
 Файлы — в `Act2Answer/outputs/`.
 

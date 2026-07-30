@@ -21,9 +21,16 @@ from pathlib import Path
 
 import yaml
 
-OUT = Path.home() / "bias_benchmark/nazar_folder/Act2Answer/outputs"
-CARROT = (Path.home() / "bias_benchmark/nazar_folder/Act2Answer/ManiSkill"
-          / "mani_skill/assets/carrot")
+import os
+
+_REPO = os.environ.get("A2A_REPO")  # корень Act2Answer; иначе путь старого сервера
+if _REPO:
+    OUT = Path(_REPO) / "outputs"
+    CARROT = Path(_REPO) / "ManiSkill/mani_skill/assets/carrot"
+else:
+    OUT = Path.home() / "bias_benchmark/nazar_folder/Act2Answer/outputs"
+    CARROT = (Path.home() / "bias_benchmark/nazar_folder/Act2Answer/ManiSkill"
+              / "mani_skill/assets/carrot")
 LEVELS = [("hard", "chosen_side"), ("soft", "chosen_side_soft"),
           ("touch", "first_touch_side")]
 

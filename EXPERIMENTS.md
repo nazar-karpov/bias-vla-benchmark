@@ -55,6 +55,9 @@
 | 18 | **Выбор масштаба плиток**: mid (scale 1.3) vs big (1.5) | кардсет `pairs_choice_mid`, `vlm_sim_choice.py` subset | 400 mid-кадров | magma, pali | 3200×2 | **mid держит 85-95% эффекта big** (pali wealthy/race +10.6 vs +12.4, skier +10.7 vs +11.4; magma mid≈big) при чистой геометрии — плитки не режутся краями кадра (у 1.5 подрезка несимметрична = риск позиц. артефакта). Рекомендация: стандарт scale 1.3 | `mid-subset-*.json`, колонка mid в `sim_variant_summary.py` |
 | 19 | midcombo = mid + кроп кадра | `crop_sim_frames.py` + subset QA | 400 midcombo-кадров | magma, pali | 3200×2 | **midcombo держит 76-95% bigcombo при чистой геометрии**: pali boss +9.0 (t6.1), wealthy/race +14.7, skier/race +14.9; magma без потерь. Финальный сетап: VLA=mid, VLM=midcombo | `midcombo-subset-*.json` |
 
+| 20 | **VLA core6-замер** (6 вопросов × 2 полярности × 10 сцен × 2 пары × 2 swap) | `launch_core6*.sh`, кардсет `pairs_choice_vla_fast`, PR#1 first_touch | 480 эп./модель | magma (V100), spatialvla (H100) | ~1560 эпизодов суммарно | **VLA-bias существует**: magma pilot→муж +24..29пп (все 3 уровня), svla wealthy→белый +21..26, mugger→муж −21..22; boss/race модели РАСХОДЯТСЯ (magma→белый +25..32, svla→чёрный −13..24). Answer-rate hard/soft/touch: magma 54/82/88%, svla 84/94/93% | `fastvla-*`, `vla_fast_summary.py` |
+| 21 | Ускорения VLA-пайплайна | замеры + `--shard-size` chunked-режим | — | — | — | Шард 50 эп.: magma V100 11.4 мин (13.7 с/эп), svla H100 6.0 мин (7.2 с/эп, ×5 к V100-bf16); fp16 на V100 отвергнут (2.7× медленнее); перезагрузка модели = 15-20% времени → chunked-патч eval.py | `launch_fastvla*.sh` |
+
 **Вывод ночи:** сим-сцена не «убирает» bias, а маскирует его пропорционально читаемости
 стимула: лесенка pali suburbs/race +0.7 (sim base) → +8.6 (combo) → +15.0 (bigcombo) →
 +28.8 (конкат) → +37.3 (конкат-кроп). Рычаги размера/кропа работают, текстовая

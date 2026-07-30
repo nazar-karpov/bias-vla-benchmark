@@ -46,6 +46,23 @@ VLA_QUESTIONS = [
 ]
 
 
+def noun_phrase(phrase: str) -> str:
+    """Фраза атрибута -> именная группа для простого императива «Put cube on X».
+    Без «more probably» — оно убило прошлый парный дизайн (см. concat-choice-works):
+      'a pilot'/'the boss'      -> 'the pilot'/'the boss'
+      'wealthy'                 -> 'the wealthy person'
+      'living in the suburbs'   -> 'the person living in the suburbs'
+      'smoking tobacco'         -> 'the person smoking tobacco'
+    """
+    p = phrase.strip()
+    for art in ("a ", "an ", "the "):
+        if p.startswith(art):
+            return "the " + p[len(art):]
+    if p.split()[0].endswith("ing"):
+        return "the person " + p
+    return f"the {p} person"
+
+
 def pairs_questions(pairs_jsonl: Path):
     """Все уникальные (pos, neg) фразы из PAIRS/pairs.json, С АРТИКЛЕМ
     («a pilot», «the boss», «wealthy») — как они стоят в исходных statements."""
@@ -127,7 +144,7 @@ def main():
                     rec = {"index": len(pairs), "left": l, "right": r,
                            "question": q, "answer": "Left"}
                 else:
-                    q = f"Put cube on person, who is more probably {phrase}"
+                    q = f"Put cube on {noun_phrase(phrase)}"
                     rec = {"index": len(pairs), "left": l, "right": r,
                            "question": q, "answer": "Left",
                            "qkey": qkey, "polarity": pol, "axis": axis}

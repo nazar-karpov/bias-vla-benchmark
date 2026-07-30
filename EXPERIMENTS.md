@@ -47,7 +47,15 @@
 | 11 | **Пара картинок (boss)** | `vlm_concat_choice.py --only-question boss` | PAIRS 50 сцен | все 3 | 800×3 | Формат заработал: гендер +14..+16пп, вдвое сильнее yes/no | `choice-boss-*.json` |
 | 12 | **Пара картинок, полный** | `vlm_concat_choice.py` | PAIRS 33 вопроса | все 3 | 26400×3 | Гендер×профессии до +52пп, часто 100/100 сцен | `choice-all-*.json` |
 | 13 | **Парный выбор НА КАДРАХ СИМУЛЯЦИИ** (subset: boss, wealthy, suburbs, skier) | `vlm_sim_choice.py --only-question boss,wealthy,suburbs,skier --gen-check` | pairs_choice 200 эп., 400 кадров sim | все 3 | 3200×3 (qwen 2000, остановлен досрочно) | Знаки как на конкате, но амплитуда сжата в ~10×: pali boss +2.8пп (t4.1) vs +14.4 конкат; magma suburbs→белый +1.7 (t5.7); qwen boss +1.4 (t3.6). Ген-проверка: живой ответ = argmax логитов (magma 100%, pali 98.2%, qwen 86% — расходится только при p≈0.5) | `simchoice-subset-*.json`, `metrics_simchoice.csv` |
-| 14 | **Ночные тесты усиления эффекта**: A кроп кадра, B кропнутые плитки, D tiles-промпт | `crop_sim_frames.py`, кардсет `pairs_choice_crop`, `vlm_sim_choice.py --prompt-style tiles` | те же 200 эп., 3 варианта кадров/промпта | все 3 | 3200×9 | Запущено 2026-07-30 ночью (цепочки на GPU0/GPU1) | `{cropframe,croptile,tileprompt}-subset-*.json` |
+| 14 | **Ночные тесты усиления эффекта**: A кроп кадра, B кропнутые плитки, combo, D tiles-промпт | `crop_sim_frames.py`, кардсет `pairs_choice_crop`, `--prompt-style tiles` | те же 200 эп., варианты кадров/промпта | все 3 | 3200×11 | Кроп РАБОТАЕТ, промпт НЕТ: pali wealthy/race base +2.5 → cropframe +6.0 → croptile +7.1 → combo **+10.9**; tileprompt откатывает к базе. Усиливаются и анти-стереотипные эффекты (честная чувствительность) | `{cropframe,croptile,combo,tileprompt}-subset-*.json`, сводка `sim_variant_summary.py` |
+| 15 | **Кроп фото в КОНКАТЕ** (тест C) | `vlm_concat_choice_flat.py` на `pairs_bias_crop/imgs` | subset 4 вопроса, 50 сцен | magma, pali | 3200×2 | Кроп поднимает даже потолок конката: pali suburbs/race +28.8→**+37.3 (t21.7)**, wealthy/race +28.2→+35.9, boss +14.4→+16.2 | `concatcrop-subset-*.json` |
+| 16 | **Большие плитки в симе** (scale 1.5 + кроп-текстуры; bigcombo = + кроп кадра) | `make_sim_choice_cardset.py --scale 1.5`, кардсет `pairs_choice_big` | 400 новых сим-кадров | magma, pali (+qwen досчитывается) | 3200×6 | **Лучший сим-вариант: bigcombo возвращает 50-70% конкатного эффекта**: pali boss/gender +10.3 (t7.9, конкат +14.4), wealthy/race +18.8, suburbs/race +15.0, skier/race +16.7; magma suburbs/race +4.5 ≥ её конката | `{big,bigcombo}-subset-*.json` |
+| 17 | Полный 33-вопросный перекрёст pali на bigcombo | `vlm_sim_choice.py` (все вопросы) | bigcombo-кадры | paligemma | 26400 | Запущен под утро 2026-07-30 | `bigcombo-all-paligemma.json` |
+
+**Вывод ночи:** сим-сцена не «убирает» bias, а маскирует его пропорционально читаемости
+стимула: лесенка pali suburbs/race +0.7 (sim base) → +8.6 (combo) → +15.0 (bigcombo) →
++28.8 (конкат) → +37.3 (конкат-кроп). Рычаги размера/кропа работают, текстовая
+подсказка «смотри на плитки» — нет.
 
 Файлы — в `Act2Answer/outputs/`.
 

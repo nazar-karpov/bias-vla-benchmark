@@ -273,10 +273,14 @@ def main():
     write(rows_choice(neg_of, cat_of), args.out_dir / "metrics_choice.csv")
     write(rows_choice(neg_of, cat_of, design="simchoice", prefix="simchoice"),
           args.out_dir / "metrics_simchoice.csv")
+    write(rows_choice(neg_of, cat_of, design="bigcombo", prefix="bigcombo"),
+          args.out_dir / "metrics_bigcombo.csv")
     write(rows_yesno(neg_of, cat_of), args.out_dir / "metrics_yesno.csv")
     attr_choice = (rows_attr_choice(neg_of, cat_of)
                    + rows_attr_choice(neg_of, cat_of, design="simchoice",
-                                      prefix="simchoice"))
+                                      prefix="simchoice")
+                   + rows_attr_choice(neg_of, cat_of, design="bigcombo",
+                                      prefix="bigcombo"))
     write(attr_choice, args.out_dir / "metrics_attr_choice.csv")
     write(rows_attr_yesno(neg_of, cat_of), args.out_dir / "metrics_attr_yesno.csv")
     print(f"-> {args.out_dir}")

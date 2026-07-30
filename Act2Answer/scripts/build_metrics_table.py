@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
 """Собрать ВСЕ метрики байеса в CSV-таблицы (пересобирается по мере готовности прогонов).
 
-Два дизайна, две таблицы:
-  metrics_choice.csv — парный выбор на конкате (vlm_concat_choice.py)
+Три дизайна, три таблицы S:
+  metrics_choice.csv    — парный выбор на конкате (vlm_concat_choice.py)
       S = P(выбрал A | позитивный вопрос) − P(выбрал A | негативный)
       порядок ab/ba уже усреднён -> позиционный крен вычтен
-  metrics_yesno.csv  — yes/no по одной картинке (vlm_posneg_yesno.py)
+  metrics_simchoice.csv — тот же дизайн на КАДРАХ СИМУЛЯЦИИ (vlm_sim_choice.py),
+      плитки на столе робота вместо PIL-конката; формат строк идентичен choice
+  metrics_yesno.csv     — yes/no по одной картинке (vlm_posneg_yesno.py)
       S = [P(yes|поз, группа A) − P(yes|поз, B)] − [P(yes|нег, A) − P(yes|нег, B)]
 
 Колонки: model, design, category, question_pos, question_neg, axis, group_a, group_b,
 n, a_pos_pct, a_neg_pct (choice) / a_pos,b_pos,a_neg,b_neg (yesno), S_pp, t, sig,
 scenes_S_pos, pos_bias_left_pct.
+
+ПЛЮС детализация по КАЖДОМУ вопросу отдельно (не только свёрнутый S) — чтобы всегда
+было видно, как модель кренится к «pilot» и к «flight attendant» по отдельности:
+  metrics_attr_choice.csv — строка на (model, design, attribute, axis, пара):
+      choose_a_pct = сырая доля выбора кандидата A на ЭТОМ вопросе (50 = нейтрально),
+      t_vs50, scenes_a_maj; polarity/pair_question связывают с парой полярностей.
+  metrics_attr_yesno.csv  — строка на (model, attribute): сырой P(yes) по каждой из
+      4 демографий (wm/ww/bm/bw), плюс агрегаты man/woman/white/black.
 
 Запуск на сервере:  python3 scripts/build_metrics_table.py --out-dir <dir>
 """
@@ -60,11 +70,13 @@ def load_meta():
     return neg, cat
 
 
-def rows_choice(neg_of, cat_of):
+def rows_choice(neg_of, cat_of, design="choice", prefix="choice"):
+    """Работает и для конката (choice-*.json), и для симуляции (simchoice-*.json) —
+    формат записей одинаковый."""
     rows = []
     for model in MODELS:
-        for tag in ("boss", "all"):
-            p = OUT / f"choice-{tag}-{model}.json"
+        for tag in ("boss", "subset", "all"):
+            p = OUT / f"{prefix}-{tag}-{model}.json"
             if not p.exists():
                 continue
             try:
@@ -99,7 +111,7 @@ def rows_choice(neg_of, cat_of):
                 if n == 0:
                     continue
                 rows.append(dict(
-                    model=model, design="choice", category=cat_of.get(attr, "?"),
+                    model=model, design=design, category=cat_of.get(attr, "?"),
                     question_pos=attr, question_neg=neg_of.get(attr, "?"),
                     axis=axis, group_a=ca, group_b=cb, n=n,
                     a_pos_pct=round(100 * sum(v["pos"]) / n, 2),
@@ -107,6 +119,91 @@ def rows_choice(neg_of, cat_of):
                     S_pp=round(100 * m, 2), t=round(t, 2), sig=sig(t),
                     scenes_S_pos=sum(1 for x in S if x > 0),
                     pos_bias_left_pct=round(posbias, 2)))
+    return rows
+
+
+def rows_attr_choice(neg_of, cat_of, design="choice", prefix="choice"):
+    """Детализация: сырая доля выбора кандидата A на КАЖДОМ вопросе отдельно.
+
+    Свёрнутый S прячет механику: S=+20пп может быть «60% на pilot и 40% на flight
+    attendant» или «90% и 70%». Здесь по строке на сам вопрос: polarity помечает,
+    позитив это или негатив своей пары, pair_question связывает половинки."""
+    rows = []
+    for model in MODELS:
+        for tag in ("boss", "subset", "all"):
+            p = OUT / f"{prefix}-{tag}-{model}.json"
+            if not p.exists():
+                continue
+            try:
+                d = json.loads(p.read_text())
+            except Exception:
+                continue
+            # (attr, axis, ca, cb) -> scene -> [p_choose_a по порядкам ab/ba]
+            g = defaultdict(lambda: defaultdict(list))
+            for r in d:
+                g[(r["attribute"], r["axis"], r["cand_a"], r["cand_b"])][r["scene"]] \
+                    .append(r["p_choose_a"])
+            for (attr, axis, ca, cb), by_scene in sorted(g.items()):
+                per_scene = [sum(v) / len(v) for v in by_scene.values() if len(v) == 2]
+                n, m, _ = stat(per_scene)
+                if n == 0:
+                    continue
+                _, _, t50 = stat([x - 0.5 for x in per_scene])
+                if attr in neg_of:
+                    pol, pair_q = "pos", attr
+                else:
+                    pol = "neg"
+                    pair_q = next((k for k, v in neg_of.items() if v == attr), "?")
+                rows.append(dict(
+                    model=model, design=design, category=cat_of.get(pair_q, "?"),
+                    attribute=attr, polarity=pol, pair_question=pair_q,
+                    axis=axis, group_a=ca, group_b=cb, n=n,
+                    choose_a_pct=round(100 * m, 2),
+                    t_vs50=round(t50, 2), sig=sig(t50),
+                    scenes_a_maj=sum(1 for x in per_scene if x > 0.5)))
+    return rows
+
+
+def rows_attr_yesno(neg_of, cat_of):
+    """Детализация yes/no: сырой P(yes) на каждом вопросе по каждой из 4 демографий."""
+    rows = []
+    for model in MODELS:
+        p = OUT / f"full-{model}.json"
+        if not p.exists():
+            continue
+        try:
+            d = json.loads(p.read_text())
+        except Exception:
+            continue
+        # attr -> scene -> demo -> p_yes
+        g = defaultdict(lambda: defaultdict(dict))
+        for r in d:
+            g[r["attribute"]][r["scene"]][(r["race"], r["sex"])] = r["p_yes"]
+        for attr, by in sorted(g.items()):
+            sc = [s for s, c in by.items() if len(c) == 4]
+            if not sc:
+                continue
+            avg = {k: 100 * sum(by[s][k] for s in sc) / len(sc)
+                   for k in [("white", "man"), ("white", "woman"),
+                             ("black", "man"), ("black", "woman")]}
+            if attr in neg_of:
+                pol, pair_q = "pos", attr
+            else:
+                pol = "neg"
+                pair_q = next((k for k, v in neg_of.items() if v == attr), "?")
+            man = (avg[("white", "man")] + avg[("black", "man")]) / 2
+            wom = (avg[("white", "woman")] + avg[("black", "woman")]) / 2
+            wht = (avg[("white", "man")] + avg[("white", "woman")]) / 2
+            blk = (avg[("black", "man")] + avg[("black", "woman")]) / 2
+            rows.append(dict(
+                model=model, design="yesno", category=cat_of.get(pair_q, "?"),
+                attribute=attr, polarity=pol, pair_question=pair_q, n=len(sc),
+                p_yes_wm=round(avg[("white", "man")], 2),
+                p_yes_ww=round(avg[("white", "woman")], 2),
+                p_yes_bm=round(avg[("black", "man")], 2),
+                p_yes_bw=round(avg[("black", "woman")], 2),
+                p_yes_man=round(man, 2), p_yes_woman=round(wom, 2),
+                p_yes_white=round(wht, 2), p_yes_black=round(blk, 2)))
     return rows
 
 
@@ -174,7 +271,18 @@ def main():
     neg_of, cat_of = load_meta()
     print("Собираю метрики:")
     write(rows_choice(neg_of, cat_of), args.out_dir / "metrics_choice.csv")
+    write(rows_choice(neg_of, cat_of, design="simchoice", prefix="simchoice"),
+          args.out_dir / "metrics_simchoice.csv")
+    write(rows_choice(neg_of, cat_of, design="bigcombo", prefix="bigcombo"),
+          args.out_dir / "metrics_bigcombo.csv")
     write(rows_yesno(neg_of, cat_of), args.out_dir / "metrics_yesno.csv")
+    attr_choice = (rows_attr_choice(neg_of, cat_of)
+                   + rows_attr_choice(neg_of, cat_of, design="simchoice",
+                                      prefix="simchoice")
+                   + rows_attr_choice(neg_of, cat_of, design="bigcombo",
+                                      prefix="bigcombo"))
+    write(attr_choice, args.out_dir / "metrics_attr_choice.csv")
+    write(rows_attr_yesno(neg_of, cat_of), args.out_dir / "metrics_attr_yesno.csv")
     print(f"-> {args.out_dir}")
 
 

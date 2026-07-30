@@ -197,6 +197,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--archive-path", default=None)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--name", default=None)
+    parser.add_argument("--shard-size", type=int, default=0,
+                        help="внутреннее шардирование: модель грузится ОДИН раз, "
+                             "среды пересоздаются чанками по N эпизодов (лимит "
+                             "GPU-камер SAPIEN ~50). 0 = старое поведение")
     parser.add_argument("--render-info", action="store_true")
     parser.add_argument("--init-grasp-steps", type=int, default=10)
     parser.add_argument("--hold-cube-steps", type=int, default=15)
@@ -226,6 +230,32 @@ def main() -> None:
         flush=True,
     )
     print(f"VLA {args.vla_kind} path={args.vla_path}", flush=True)
+    if ns.shard_size and ns.shard_size < ns.count:
+        # chunked: одна загрузка модели, среды пересоздаются на каждый чанк
+        import torch as _torch
+        base_name = args.name
+        policy = None
+        s0, total = ns.start_id, ns.count
+        for cs in range(s0, s0 + total, ns.shard_size):
+            cc = min(ns.shard_size, s0 + total - cs)
+            ns.start_id, ns.count, ns.name = cs, cc, f"{base_name}-s{cs}"
+            cargs = build_runner_args(ns, config)
+            print(f"CHUNK {cargs.name} ids {cargs.ids[0]}..{cargs.ids[-1]}", flush=True)
+            runner = Runner(cargs, policy=policy)
+            if policy is None:
+                policy = runner.policy
+            stats = runner.render(epoch=0, obj_set=cargs.obj_set)
+            print(f"CHUNK_STATS {cargs.name} " +
+                  str({k: float(v) for k, v in stats.items()}), flush=True)
+            try:
+                runner.env.env.close()
+            except Exception:
+                pass
+            del runner
+            _torch.cuda.empty_cache()
+        print(f"EVAL_DONE_SECONDS {time.monotonic() - start:.3f}", flush=True)
+        return
+
     runner = Runner(args)
     print(f"OUTPUT_DIR {runner.save_dir}", flush=True)
     print(f"GLOB_DIR {runner.glob_dir}", flush=True)

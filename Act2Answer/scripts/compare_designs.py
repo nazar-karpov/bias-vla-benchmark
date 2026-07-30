@@ -4,9 +4,10 @@
 Кладёт рядом эффект одного и того же вопроса, померянный двумя дизайнами, чтобы было
 видно, что даёт формат подачи. Пишет metrics_comparison.csv.
 
-S_yesno  — одна картинка: [P(yes|поз,A) − P(yes|поз,B)] − [P(yes|нег,A) − P(yes|нег,B)]
-S_choice — пара рядом:    P(выбрал A|поз) − P(выбрал A|нег), усреднено по порядкам ab/ba
-ratio    — во сколько раз парный дизайн больше (по модулю)
+S_yesno     — одна картинка: [P(yes|поз,A) − P(yes|поз,B)] − [P(yes|нег,A) − P(yes|нег,B)]
+S_choice    — пара рядом:    P(выбрал A|поз) − P(выбрал A|нег), усреднено по ab/ba
+S_simchoice — тот же парный дизайн, но пара подана КАДРОМ СИМУЛЯЦИИ (плитки на столе)
+ratio       — во сколько раз парный дизайн больше yes/no (по модулю)
 """
 import argparse
 import csv
@@ -25,9 +26,18 @@ def main():
 
     yn = load(args.dir / "metrics_yesno.csv")
     ch = load(args.dir / "metrics_choice.csv")
+    sim = load(args.dir / "metrics_simchoice.csv")
 
     # yes/no: одна строка на (model, question, axis)
     Y = {(r["model"], r["question_pos"], r["axis"]): r for r in yn}
+
+    # simchoice: две строки (две пары) на ключ -> усредняем
+    simagg = defaultdict(list)
+    for r in sim:
+        simagg[(r["model"], r["question_pos"], r["axis"])].append(r)
+    SIM = {k: (sum(float(x["S_pp"]) for x in v) / len(v),
+               sum(float(x["t"]) for x in v) / len(v))
+           for k, v in simagg.items()}
 
     # choice: две строки (две пары) на (model, question, axis) -> усредняем
     agg = defaultdict(list)
@@ -45,6 +55,7 @@ def main():
         S_yn = float(y["S_pp"]) if y else None
         t_yn = float(y["t"]) if y else None
         ratio = (abs(S_ch) / abs(S_yn)) if (S_yn not in (None, 0)) else None
+        S_sim, t_sim = SIM.get(k, (None, None))
         rows.append(dict(
             model=model, category=v[0]["category"], question_pos=q,
             question_neg=v[0]["question_neg"], axis=axis,
@@ -53,9 +64,13 @@ def main():
             n_yesno=y["n"] if y else "",
             S_choice_pp=round(S_ch, 2), t_choice=round(t_ch, 2),
             n_choice=n_ch, scenes_pos_choice=f"{w_ch}/{n_ch}",
+            S_simchoice_pp=round(S_sim, 2) if S_sim is not None else "",
+            t_simchoice=round(t_sim, 2) if t_sim is not None else "",
             ratio_choice_over_yesno=round(ratio, 1) if ratio else "",
             same_sign=("да" if (S_yn is not None and S_yn * S_ch > 0) else
                        ("нет" if S_yn is not None else "")),
+            same_sign_sim=("да" if (S_sim is not None and S_sim * S_ch > 0) else
+                           ("нет" if S_sim is not None else "")),
         ))
     rows.sort(key=lambda r: (r["model"], -abs(r["S_choice_pp"])))
     out = args.dir / "metrics_comparison.csv"

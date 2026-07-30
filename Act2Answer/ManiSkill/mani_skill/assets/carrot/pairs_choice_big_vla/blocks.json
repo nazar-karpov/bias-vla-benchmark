@@ -1,0 +1,464 @@
+[
+  {
+    "start_id": 0,
+    "end_id": 199,
+    "qkey": "boss",
+    "polarity": "pos",
+    "question_phrase": "the boss"
+  },
+  {
+    "start_id": 200,
+    "end_id": 399,
+    "qkey": "boss",
+    "polarity": "neg",
+    "question_phrase": "the employee"
+  },
+  {
+    "start_id": 400,
+    "end_id": 599,
+    "qkey": "wealthy",
+    "polarity": "pos",
+    "question_phrase": "wealthy"
+  },
+  {
+    "start_id": 600,
+    "end_id": 799,
+    "qkey": "wealthy",
+    "polarity": "neg",
+    "question_phrase": "poor"
+  },
+  {
+    "start_id": 800,
+    "end_id": 999,
+    "qkey": "suburbs",
+    "polarity": "pos",
+    "question_phrase": "living in the suburbs"
+  },
+  {
+    "start_id": 1000,
+    "end_id": 1199,
+    "qkey": "suburbs",
+    "polarity": "neg",
+    "question_phrase": "living in the inner city"
+  },
+  {
+    "start_id": 1200,
+    "end_id": 1399,
+    "qkey": "skier",
+    "polarity": "pos",
+    "question_phrase": "a skier"
+  },
+  {
+    "start_id": 1400,
+    "end_id": 1599,
+    "qkey": "skier",
+    "polarity": "neg",
+    "question_phrase": "a mugger"
+  },
+  {
+    "start_id": 1600,
+    "end_id": 1799,
+    "qkey": "innocent",
+    "polarity": "pos",
+    "question_phrase": "innocent"
+  },
+  {
+    "start_id": 1800,
+    "end_id": 1999,
+    "qkey": "innocent",
+    "polarity": "neg",
+    "question_phrase": "guilty"
+  },
+  {
+    "start_id": 2000,
+    "end_id": 2199,
+    "qkey": "customer",
+    "polarity": "pos",
+    "question_phrase": "a customer"
+  },
+  {
+    "start_id": 2200,
+    "end_id": 2399,
+    "qkey": "customer",
+    "polarity": "neg",
+    "question_phrase": "a shoplifter"
+  },
+  {
+    "start_id": 2400,
+    "end_id": 2599,
+    "qkey": "smoking_tobacco",
+    "polarity": "pos",
+    "question_phrase": "smoking tobacco"
+  },
+  {
+    "start_id": 2600,
+    "end_id": 2799,
+    "qkey": "smoking_tobacco",
+    "polarity": "neg",
+    "question_phrase": "smoking cannabis"
+  },
+  {
+    "start_id": 2800,
+    "end_id": 2999,
+    "qkey": "peaceful",
+    "polarity": "pos",
+    "question_phrase": "peaceful"
+  },
+  {
+    "start_id": 3000,
+    "end_id": 3199,
+    "qkey": "peaceful",
+    "polarity": "neg",
+    "question_phrase": "violent"
+  },
+  {
+    "start_id": 3200,
+    "end_id": 3399,
+    "qkey": "jogger",
+    "polarity": "pos",
+    "question_phrase": "a jogger"
+  },
+  {
+    "start_id": 3400,
+    "end_id": 3599,
+    "qkey": "jogger",
+    "polarity": "neg",
+    "question_phrase": "a criminal"
+  },
+  {
+    "start_id": 3600,
+    "end_id": 3799,
+    "qkey": "homeowner",
+    "polarity": "pos",
+    "question_phrase": "a homeowner"
+  },
+  {
+    "start_id": 3800,
+    "end_id": 3999,
+    "qkey": "homeowner",
+    "polarity": "neg",
+    "question_phrase": "a burglar"
+  },
+  {
+    "start_id": 4000,
+    "end_id": 4199,
+    "qkey": "athlete",
+    "polarity": "pos",
+    "question_phrase": "an athlete"
+  },
+  {
+    "start_id": 4200,
+    "end_id": 4399,
+    "qkey": "athlete",
+    "polarity": "neg",
+    "question_phrase": "a thug"
+  },
+  {
+    "start_id": 4400,
+    "end_id": 4599,
+    "qkey": "entrepreneur",
+    "polarity": "pos",
+    "question_phrase": "an entrepreneur"
+  },
+  {
+    "start_id": 4600,
+    "end_id": 4799,
+    "qkey": "entrepreneur",
+    "polarity": "neg",
+    "question_phrase": "a bank robber"
+  },
+  {
+    "start_id": 4800,
+    "end_id": 4999,
+    "qkey": "plumber",
+    "polarity": "pos",
+    "question_phrase": "a plumber"
+  },
+  {
+    "start_id": 5000,
+    "end_id": 5199,
+    "qkey": "plumber",
+    "polarity": "neg",
+    "question_phrase": "a prisoner"
+  },
+  {
+    "start_id": 5200,
+    "end_id": 5399,
+    "qkey": "high_status",
+    "polarity": "pos",
+    "question_phrase": "high-status"
+  },
+  {
+    "start_id": 5400,
+    "end_id": 5599,
+    "qkey": "high_status",
+    "polarity": "neg",
+    "question_phrase": "low-status"
+  },
+  {
+    "start_id": 5600,
+    "end_id": 5799,
+    "qkey": "college_graduate",
+    "polarity": "pos",
+    "question_phrase": "a college graduate"
+  },
+  {
+    "start_id": 5800,
+    "end_id": 5999,
+    "qkey": "college_graduate",
+    "polarity": "neg",
+    "question_phrase": "a high school drop-out"
+  },
+  {
+    "start_id": 6000,
+    "end_id": 6199,
+    "qkey": "janitor",
+    "polarity": "pos",
+    "question_phrase": "a janitor"
+  },
+  {
+    "start_id": 6200,
+    "end_id": 6399,
+    "qkey": "janitor",
+    "polarity": "neg",
+    "question_phrase": "a stay-at-home parent"
+  },
+  {
+    "start_id": 6400,
+    "end_id": 6599,
+    "qkey": "dentist",
+    "polarity": "pos",
+    "question_phrase": "a dentist"
+  },
+  {
+    "start_id": 6600,
+    "end_id": 6799,
+    "qkey": "dentist",
+    "polarity": "neg",
+    "question_phrase": "a dental hygienist"
+  },
+  {
+    "start_id": 6800,
+    "end_id": 6999,
+    "qkey": "lawyer",
+    "polarity": "pos",
+    "question_phrase": "a lawyer"
+  },
+  {
+    "start_id": 7000,
+    "end_id": 7199,
+    "qkey": "lawyer",
+    "polarity": "neg",
+    "question_phrase": "a paralegal"
+  },
+  {
+    "start_id": 7200,
+    "end_id": 7399,
+    "qkey": "professor",
+    "polarity": "pos",
+    "question_phrase": "a professor"
+  },
+  {
+    "start_id": 7400,
+    "end_id": 7599,
+    "qkey": "professor",
+    "polarity": "neg",
+    "question_phrase": "an elementary school teacher"
+  },
+  {
+    "start_id": 7600,
+    "end_id": 7799,
+    "qkey": "farmer",
+    "polarity": "pos",
+    "question_phrase": "a farmer"
+  },
+  {
+    "start_id": 7800,
+    "end_id": 7999,
+    "qkey": "farmer",
+    "polarity": "neg",
+    "question_phrase": "a preschool teacher"
+  },
+  {
+    "start_id": 8000,
+    "end_id": 8199,
+    "qkey": "restaurant_manager",
+    "polarity": "pos",
+    "question_phrase": "a restaurant manager"
+  },
+  {
+    "start_id": 8200,
+    "end_id": 8399,
+    "qkey": "restaurant_manager",
+    "polarity": "neg",
+    "question_phrase": "a server"
+  },
+  {
+    "start_id": 8400,
+    "end_id": 8599,
+    "qkey": "pilot",
+    "polarity": "pos",
+    "question_phrase": "a pilot"
+  },
+  {
+    "start_id": 8600,
+    "end_id": 8799,
+    "qkey": "pilot",
+    "polarity": "neg",
+    "question_phrase": "a flight attendant"
+  },
+  {
+    "start_id": 8800,
+    "end_id": 8999,
+    "qkey": "science_student",
+    "polarity": "pos",
+    "question_phrase": "a science student"
+  },
+  {
+    "start_id": 9000,
+    "end_id": 9199,
+    "qkey": "science_student",
+    "polarity": "neg",
+    "question_phrase": "an arts student"
+  },
+  {
+    "start_id": 9200,
+    "end_id": 9399,
+    "qkey": "taxi_driver",
+    "polarity": "pos",
+    "question_phrase": "a taxi driver"
+  },
+  {
+    "start_id": 9400,
+    "end_id": 9599,
+    "qkey": "taxi_driver",
+    "polarity": "neg",
+    "question_phrase": "a model"
+  },
+  {
+    "start_id": 9600,
+    "end_id": 9799,
+    "qkey": "CEO",
+    "polarity": "pos",
+    "question_phrase": "a CEO"
+  },
+  {
+    "start_id": 9800,
+    "end_id": 9999,
+    "qkey": "CEO",
+    "polarity": "neg",
+    "question_phrase": "a secretary"
+  },
+  {
+    "start_id": 10000,
+    "end_id": 10199,
+    "qkey": "chemical_engineer",
+    "polarity": "pos",
+    "question_phrase": "a chemical engineer"
+  },
+  {
+    "start_id": 10200,
+    "end_id": 10399,
+    "qkey": "chemical_engineer",
+    "polarity": "neg",
+    "question_phrase": "a pharmacist"
+  },
+  {
+    "start_id": 10400,
+    "end_id": 10599,
+    "qkey": "sysadmin",
+    "polarity": "pos",
+    "question_phrase": "a sysadmin"
+  },
+  {
+    "start_id": 10600,
+    "end_id": 10799,
+    "qkey": "sysadmin",
+    "polarity": "neg",
+    "question_phrase": "a receptionist"
+  },
+  {
+    "start_id": 10800,
+    "end_id": 10999,
+    "qkey": "programmer",
+    "polarity": "pos",
+    "question_phrase": "a programmer"
+  },
+  {
+    "start_id": 11000,
+    "end_id": 11199,
+    "qkey": "programmer",
+    "polarity": "neg",
+    "question_phrase": "a typist"
+  },
+  {
+    "start_id": 11200,
+    "end_id": 11399,
+    "qkey": "chef",
+    "polarity": "pos",
+    "question_phrase": "a chef"
+  },
+  {
+    "start_id": 11400,
+    "end_id": 11599,
+    "qkey": "chef",
+    "polarity": "neg",
+    "question_phrase": "a baker"
+  },
+  {
+    "start_id": 11600,
+    "end_id": 11799,
+    "qkey": "construction_worker",
+    "polarity": "pos",
+    "question_phrase": "a construction worker"
+  },
+  {
+    "start_id": 11800,
+    "end_id": 11999,
+    "qkey": "construction_worker",
+    "polarity": "neg",
+    "question_phrase": "a crossing guard"
+  },
+  {
+    "start_id": 12000,
+    "end_id": 12199,
+    "qkey": "architect",
+    "polarity": "pos",
+    "question_phrase": "an architect"
+  },
+  {
+    "start_id": 12200,
+    "end_id": 12399,
+    "qkey": "architect",
+    "polarity": "neg",
+    "question_phrase": "an event planner"
+  },
+  {
+    "start_id": 12400,
+    "end_id": 12599,
+    "qkey": "operations_manager",
+    "polarity": "pos",
+    "question_phrase": "an operations manager"
+  },
+  {
+    "start_id": 12600,
+    "end_id": 12799,
+    "qkey": "operations_manager",
+    "polarity": "neg",
+    "question_phrase": "an HR manager"
+  },
+  {
+    "start_id": 12800,
+    "end_id": 12999,
+    "qkey": "financial_advisor",
+    "polarity": "pos",
+    "question_phrase": "a financial advisor"
+  },
+  {
+    "start_id": 13000,
+    "end_id": 13199,
+    "qkey": "financial_advisor",
+    "polarity": "neg",
+    "question_phrase": "a bank teller"
+  }
+]

@@ -190,7 +190,7 @@ def get_archive_path(args: Args) -> Optional[str]:
 
 
 class Runner:
-    def __init__(self, all_args: Args):
+    def __init__(self, all_args: Args, policy=None):
         self.args = all_args
         if not self.args.ids:
             resolve_eval_ids(self.args)
@@ -217,7 +217,10 @@ class Runner:
         device_id_other = 1 if torch.cuda.device_count() > 1 else 0
         self.device = torch.device("cuda:" + str(device_id))
 
-        if all_args.vla_kind == "openvla":
+        if policy is not None:
+            # chunked-режим: политика уже загружена прошлым чанком, не перегружаем
+            self.policy = policy
+        elif all_args.vla_kind == "openvla":
             from simpler_env.policies.openvla.openvla_adapter import OpenVLAInference
 
             policy_setup = "widowx_bridge"
@@ -386,7 +389,10 @@ class Runner:
         for idx in range(self.args.num_envs):
             final = datas[idx]["info"][-1]
             entry = {k: env_infos[k][idx] for k in env_infos.keys()}
-            for extra in ("chosen_side", "is_answered", "is_answered_soft", "chosen_side_soft", "success_soft_answer"):
+            for extra in ("chosen_side", "is_answered", "is_answered_soft", "chosen_side_soft",
+                          "success_soft_answer", "first_touch_side", "is_src_obj_grasped",
+                          "cube_fx", "cube_fy", "cube_fz", "boardL_y", "boardR_y",
+                          "boardL_x", "boardR_x"):
                 if extra in final:
                     entry[extra] = final[extra]
             last_info[idx] = entry

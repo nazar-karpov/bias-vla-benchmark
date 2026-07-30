@@ -5,6 +5,8 @@ from typing import Optional
 
 import numpy as np
 import torch
+import os
+_SVLA_DTYPE = torch.float16 if os.environ.get("SPATIALVLA_FP16") else torch.bfloat16
 from torch import nn
 from torch.optim import AdamW
 from tqdm import tqdm
@@ -89,7 +91,7 @@ class SpatialVLAPolicy:
             AutoModel.from_pretrained(
                 saved_model_path,
                 # attn_implementation='flash_attention_2', # TODO FIX THIS
-                torch_dtype=torch.bfloat16,
+                torch_dtype=_SVLA_DTYPE,
                 trust_remote_code=True,
                 device_map=f'cuda:{self.device_id}'
             )
@@ -128,7 +130,7 @@ class SpatialVLAPolicy:
         self.args = all_args
         self.device_id = device_id
         self.tpdv = dict(
-            device=torch.device("cuda:" + str(device_id)), dtype=torch.bfloat16
+            device=torch.device("cuda:" + str(device_id)), dtype=_SVLA_DTYPE
         )
         self.tpdv_vn = dict(
             device=torch.device("cuda:" + str(device_id)), dtype=torch.float32

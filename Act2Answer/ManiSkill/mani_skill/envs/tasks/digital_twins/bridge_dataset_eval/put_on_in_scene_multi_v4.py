@@ -912,6 +912,11 @@ class Act2AnswerV4(_PickCubeBase):
         is_answered_soft = torch.zeros((b,), dtype=torch.bool, device=device)
         chosen_side_soft = torch.zeros((b,), dtype=torch.long, device=device)
         success_soft_answer = torch.zeros((b,), dtype=torch.bool, device=device)
+        # PR#1 (fix_metrics): защёлка первого касания плитки ОТПУЩЕННЫМ кубом.
+        # Переживает шаги эпизода через episode_stats; сбрасывается на reset.
+        first_touch = self.episode_stats.get(
+            "first_touch_side", torch.zeros((b,), dtype=torch.long, device=device)
+        )
 
         # existing cube-based soft metrics
         is_success_soft_v1 = torch.zeros((b,), dtype=torch.bool, device=device)
@@ -1003,6 +1008,14 @@ class Act2AnswerV4(_PickCubeBase):
             success[i] = on_left if ans == "left" else on_right
             is_answered[i] = on_left or on_right
             chosen_side[i] = 1 if on_left else (2 if on_right else 0)  # BIAS: which tile cube landed on
+            # PR#1: касание засчитывается только ПОСЛЕ подъёма куба — на старте он
+            # лежит в допуске правой плитки и дал бы ложный Right без этого guard.
+            _ft_ready = bool(self.episode_stats["is_src_obj_grasped"][i]) and not bool(is_grasped[i])
+            if int(first_touch[i]) == 0 and _ft_ready:
+                if on_left:
+                    first_touch[i] = 1
+                elif on_right:
+                    first_touch[i] = 2
 
             # --- SOFT ANSWER: recompute on_board with the enlarged margin ---
             def check_on_board_soft(board_name: str) -> bool:
@@ -1205,6 +1218,19 @@ class Act2AnswerV4(_PickCubeBase):
         self.episode_stats["is_answered_soft"] = is_answered_soft
         self.episode_stats["chosen_side_soft"] = chosen_side_soft
         self.episode_stats["success_soft_answer"] = success_soft_answer
+        self.episode_stats["first_touch_side"] = first_touch
+        # Финальная позиция куба и центры плиток: позволяет ПОСТФАКТУМ пересчитать
+        # chosen_side с ЛЮБЫМ порогом (margin_xy=0.08 щедрый — см. разбор ep2):
+        # strict = |cube-board|_xy <= bbox/2 без допуска, и т.п. Без ре-ранов.
+        self.episode_stats["cube_fx"] = cube_p[:, 0].clone()
+        self.episode_stats["cube_fy"] = cube_p[:, 1].clone()
+        self.episode_stats["cube_fz"] = cube_p[:, 2].clone()
+        _bl = torch.stack([self.objs_board[self._current_left_names[i]].pose.p[i] for i in range(b)])
+        _br = torch.stack([self.objs_board[self._current_right_names[i]].pose.p[i] for i in range(b)])
+        self.episode_stats["boardL_y"] = _bl[:, 1].clone()
+        self.episode_stats["boardR_y"] = _br[:, 1].clone()
+        self.episode_stats["boardL_x"] = _bl[:, 0].clone()
+        self.episode_stats["boardR_x"] = _br[:, 0].clone()
         self.episode_stats["is_success"] = success
         self.episode_stats["is_success_soft_v1"] = is_success_soft_v1
 

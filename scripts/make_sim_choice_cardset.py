@@ -104,6 +104,9 @@ def main():
                     help="сабсемплинг сцен ШАГОМ (равномерно по алфавиту, т.е. по "
                          "категориям occupations/crime/status): 10 -> каждая 5-я. "
                          "0 = все 50. Для быстрых VLA-прогонов")
+    ap.add_argument("--questions", default=None,
+                    help="фильтр qkey через запятую (напр. 'boss,pilot,wealthy,skier') "
+                         "— оставить только эти вопросные пары")
     ap.add_argument("--pairs", choices=("all", "two"), default="all",
                     help="two = по одной паре на ось (wm|ww гендер, wm|bm раса) "
                          "вместо четырёх — вдвое быстрее")
@@ -139,6 +142,10 @@ def main():
             for key, p, n in pairs_questions(args.pairs_root / "pairs.json"):
                 if (p, n) not in night_pairs:
                     questions.append((key, p, n))
+        if args.questions:
+            keep = {q.strip() for q in args.questions.split(",") if q.strip()}
+            questions = [q for q in questions if q[0] in keep]
+            print(f"фильтр вопросов: {[q[0] for q in questions]}")
         blocks = [(qk, phrase, pol) for qk, pos, neg in questions
                   for phrase, pol in ((pos, "pos"), (neg, "neg"))]
     else:

@@ -35,10 +35,10 @@ LEVELS = [("hard", "chosen_side"), ("soft", "chosen_side_soft"),
           ("touch", "first_touch_side")]
 
 
-def load_runs(model):
+def load_runs(model, prefix="fastvla"):
     """(ep_id, swap) -> last_info dict"""
     out = {}
-    for d in list(OUT.glob(f"fastvla-{model}-*-s*")) + list(OUT.glob(f"fastvla-{model}-*-q*")):
+    for d in list(OUT.glob(f"{prefix}-{model}-*-s*")) + list(OUT.glob(f"{prefix}-{model}-*-q*")):
         parts = d.name.split("-")
         swap = parts[-2] == "swap"
         start = int(parts[-1][1:])  # s<start> (50-шарды) или q<start> (вопросные 40)
@@ -54,6 +54,7 @@ def load_runs(model):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
+    ap.add_argument("--prefix", default="fastvla", help="префикс папок прогона")
     ap.add_argument("--assets", default=None,
                     help="pairs_choice_vla_fast (magma) / _fast5 (spatialvla)")
     args = ap.parse_args()
@@ -61,7 +62,7 @@ def main():
                              else "pairs_choice_vla_fast")
 
     pairs = json.loads((CARROT / assets / "pairs.json").read_text())
-    runs = load_runs(args.model)
+    runs = load_runs(args.model, args.prefix)
     print(f"{args.model}: эпизодо-прогонов собрано {len(runs)} "
           f"(из {len(pairs)*2} возможных)")
 

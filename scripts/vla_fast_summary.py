@@ -31,10 +31,10 @@ LEVELS = [("hard", "chosen_side"), ("soft", "chosen_side_soft"),
 def load_runs(model):
     """(ep_id, swap) -> last_info dict"""
     out = {}
-    for d in OUT.glob(f"fastvla-{model}-*-s*"):
+    for d in list(OUT.glob(f"fastvla-{model}-*-s*")) + list(OUT.glob(f"fastvla-{model}-*-q*")):
         parts = d.name.split("-")
         swap = parts[-2] == "swap"
-        start = int(parts[-1][1:])
+        start = int(parts[-1][1:])  # s<start> (50-шарды) или q<start> (вопросные 40)
         st = d / "glob" / "vis_0_test" / "stats.yaml"
         if not st.exists():
             continue

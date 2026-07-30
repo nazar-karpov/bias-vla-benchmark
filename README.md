@@ -1,163 +1,184 @@
 # bias-vla-benchmark
 
-Бенчмарк для измерения **социальных смещений (bias)** у Vision-Language-Action (VLA)
-и Vision-Language (VLM) моделей. Построен поверх
-[Act2Answer](https://github.com/CognitiveAISystems/Act2Answer): модель отвечает на
-вопрос **действием** — ставит захваченный кубик на ту из двух карточек-плиток,
-которую считает верным ответом. Мы генерируем контрфактические пары карточек
-(меняем только пол/расу/атрибут человека на изображении) и смотрим, различается ли
-поведение модели.
+Бенчмарк **демографического bias у VLA-моделей** (Vision-Language-Action) и VLM.
+Вопрос простой: если поставить роботу задачу вроде «положи кубик на **босса**», а на
+столе две плитки-портрета (например мужчина и женщина), — **предвзято ли** робот
+выбирает плитку по полу/расе? И отличается ли это от того, что та же модель отвечает
+как чистый VLM (просто по картинке, без моторики)?
 
-> **Что в этом репозитории:** только **код** — форк Act2Answer с нашими правками,
-> скрипты генерации карточек, прогонов и анализа bias. Данные (меши карточек,
-> изображения, датасеты), веса моделей и логи **намеренно не хранятся** в git
-> (см. [`.gitignore`](.gitignore)) — они генерируются/скачиваются по шагам ниже.
+Данные — из датасета **PAIRS** (occupations / status / crime). Симуляция — на
+**Act2Answer + ManiSkill/SimplerEnv** (робот реально двигает кубик). Замеряем сдвиг
+выбора в процентных пунктах с обязательными контролями (полярность, порядок, валидность).
+
+> Полная методика и грабли — в [`BIAS_EXPERIMENTS.md`](BIAS_EXPERIMENTS.md),
+> результаты по моделям — в [`docs/RESULTS.md`](docs/RESULTS.md),
+> повествовательный журнал — в [`docs/JOURNAL.md`](docs/JOURNAL.md),
+> таблица всех прогонов — в [`EXPERIMENTS.md`](EXPERIMENTS.md).
 
 ---
 
-## Структура
+## Кроп — ключевая фича
+
+На полных портретах PAIRS человек занимает малую долю кадра (много фона), и в
+симуляции плитка ещё мельче — bias «тонет». Поэтому есть **кропнутые** кардсеты:
+плитка обрезается по центру на человека и ресайзится в 512×512 (тот размер текстуры,
+что ждёт `make_cardset.py`), без искажения пропорций. Вопросы/эпизоды те же — меняются
+**только текстуры**, что изолирует эффект «даём модели лучше разглядеть содержимое».
+
+| скрипт | что делает |
+|---|---|
+| [`scripts/crop_pairs_images.py`](scripts/crop_pairs_images.py) | центр-кроп плиток PAIRS → 512×512 (доля кадра `--frac`, смещение вверх под лица) |
+| [`scripts/run_cropped_benchmark.sh`](scripts/run_cropped_benchmark.sh) | **resumable** драйвер: собрать кроп-кардсет → поставить модели → прогнать magma/spatialvla/internvla/rldx (noswap+swap). Маркеры состояния, skip-on-fail |
+| [`Act2Answer/scripts/crop_sim_frames.py`](Act2Answer/scripts/crop_sim_frames.py) | кроп уже отрендеренных сим-кадров вокруг плиток (без симулятора) — проверка «плитки слишком мелкие» |
+
+Кропнутые кардсеты: `pairs_bias_crop`, `pairs_choice_crop`, `pairs_choice_vla_confirm`
+(последний — весь на кропе, проверено по хешам мешей).
+
+> ⚠️ Сами меши плиток (`*.glb`) **не в git** (тяжёлые, генерируются скриптами).
+> В репозитории лежит **структура** кардсета (`pairs.json`, `model_db.json`,
+> `blocks.json`) и **скрипты генерации**. Чтобы получить меши — прогнать
+> `crop_pairs_images.py` + `make_cardset.py` (см. шаг 4).
+
+---
+
+## Структура репозитория
 
 ```
-Act2Answer/                 форк https://github.com/CognitiveAISystems/Act2Answer
-  ManiSkill/                вендорится (симулятор сцен, SAPIEN/Vulkan)
-  SimplerEnv/               вендорится (обёртка политик + eval-петля)
-  openvla/                  вендорится (prismatic / OpenVLA)
-  scripts/                  <-- НАШ КОД
-    setup/                  установка окружений и клон внешних репо
-    make_cardset.py         генерация карточек Act2Answer из своих картинок
-    eval_<model>.sh         прогон VLA-модели в симуляторе
-    run_vlmqa.sh            прямой VLM-опрос (Magma) на тех же эпизодах
-    magma_*.py              probing / logit-lens / steering / counterfactual
-    analyze_bias.py         сводка bias по результатам прогона
-    ...
-  ManiSkill/mani_skill/assets/carrot/<cardset>/   карточки (генерируются, не в git)
-build_pairs_csv.py          сборка CSV пар (left,right,question,answer) для карточек
+.
+├── README.md                 ← этот файл
+├── BIAS_EXPERIMENTS.md       методика замера bias + обязательные контроли
+├── EXPERIMENTS.md            таблица всех прогонов (номер, флаги, датасет, результат)
+├── CLAUDE.md                 правила работы в репо (журнал, метрики, контроли)
+├── metrics/                  сводные CSV: metrics_{yesno,choice,comparison}.csv
+├── docs/
+│   ├── RESULTS.md            результаты по моделям (главная сводка)
+│   ├── JOURNAL.md            повествовательный журнал (свежее сверху)
+│   ├── INFRA.md              инфраструктура (серверы, окружения)
+│   ├── SIMPLER_SETUP.md      установка SimplerEnv/симулятора
+│   └── bias_benchmark_results.xlsx
+│
+├── scripts/                  ← «тонкая» линия: VLM-probing, кроп, анализ
+│   ├── crop_pairs_images.py, run_cropped_benchmark.sh   (кроп)
+│   ├── magma_vlm_qa.py, paligemma_vlm_qa.py             (VLM-опрос напрямую)
+│   ├── magma_probe.py, magma_steering.py, magma_logit_lens.py,
+│   │   magma_extract_acts.py, magma_counterfactual.py   (мех. интерпретация)
+│   ├── analyze_bias.py, bias_detail.py, compare_vlm_vla.py, final_summary_crop.py
+│   ├── make_cardset.py                                  (сборка кардсета из плиток)
+│   └── {internvla,rldx}_server.sh, setup_rldx.sh, fetch_internvla_ckpt.sh
+│
+├── outputs_local/cropped_run/   результаты кроп-прогона (RESULTS_cropped_pairs.md, json)
+│
+└── Act2Answer/               ← «толстая» линия: симулятор + прогоны
+    ├── scripts/              launch_*.sh (core6/fastvla/night/simchoice),
+    │                         confirm_v100.sh, make_sim_choice_cardset.py,
+    │                         render_sim_choice_frames.py, vla_fast_summary.py,
+    │                         sim_variant_summary.py, build_metrics_table.py, ...
+    ├── ManiSkill/            движок симуляции + assets/carrot/<кардсеты> (JSON, без .glb)
+    ├── SimplerEnv/           обёртка eval (simpler_env.eval), политики моделей
+    └── ...                   (InternVLA-M1, RLDX-1, RL4VLA — клоны upstream, см. .gitignore)
 ```
 
-**Наши правки к апстриму Act2Answer** (три файла — можно посмотреть `git log`/`git diff`
-внутри форка, если история подключена):
-- `SimplerEnv/simpler_env/policies/magma/magma_model.py` — Magma как политика / VLM-QA
-- `SimplerEnv/simpler_env/run.py`
-- `ManiSkill/.../bridge_dataset_eval/put_on_in_scene_multi_v4.py` — сцена с двумя карточками
+**Почему две папки со скриптами.** Репозиторий сведён из двух линий разработки:
+`scripts/` (в корне) — прямой VLM-опрос, кроп-эксперименты и механистическая
+интерпретация Magma; `Act2Answer/scripts/` — оркестрация VLA-прогонов в симуляторе.
+Обе сохранены намеренно.
 
 ---
 
 ## Требования
 
-- Linux, NVIDIA GPU (тестировалось на V100, CUDA 12.1), рабочий **Vulkan** (для SAPIEN/ManiSkill).
-- `conda` (miniconda/mamba). Каждая модель ставится в **отдельное окружение**.
-- Интернет для скачивания весов моделей с HuggingFace.
+- Python 3.10/3.11, CUDA-GPU (V100/H100 — на чём гоняли).
+- Симулятор: SimplerEnv + ManiSkill (SAPIEN/Vulkan). Установка — [`docs/SIMPLER_SETUP.md`](docs/SIMPLER_SETUP.md).
+- У каждой модели своё окружение (transformers-версии конфликтуют) — ставится
+  отдельно (`setup_*` / `*_server.sh`).
+- Апстрим-репы моделей (InternVLA-M1, RLDX-1, RL4VLA) клонируются отдельно —
+  они в `.gitignore`.
 
 ---
 
 ## Воспроизведение — по шагам
 
-Все скрипты сами подтягивают конфиг из [`Act2Answer/scripts/env.sh`](Act2Answer/scripts/env.sh)
-(пути, `PYTHONPATH`, каталоги логов/выходов). Переменные можно переопределять через
-окружение (`ASSETS=...`, `COUNT=...`, `EVAL_GPU=...` и т.д.).
-
-### 1. Получить код
-
+### 1. Код
 ```bash
-git clone https://github.com/nazar-karpov/bias-vla-benchmark.git
-cd bias-vla-benchmark
+git clone <this-repo> bias-vla-benchmark && cd bias-vla-benchmark
 ```
 
-`ManiSkill`, `SimplerEnv`, `openvla` уже лежат внутри `Act2Answer/` (вендорены).
-
-### 2. Клонировать внешние репо (нужны только для части моделей)
-
+### 2. Внешние репо (нужны только для части моделей)
 ```bash
-cd Act2Answer
-bash scripts/setup/clone_external_repos.sh
-```
-Клонирует рядом с `Act2Answer/`:
-[RL4VLA](https://github.com/gen-robot/RL4VLA) (pi0),
-[Xiaomi-Robotics-0](https://github.com/XiaomiRobotics/Xiaomi-Robotics-0),
-[InternVLA-M1](https://github.com/InternRobotics/InternVLA-M1),
-[molmoact2](https://github.com/allenai/molmoact2).
-Путь можно сменить через `A2A_EXTERNAL_DIR`.
-
-> Для нашего основного bias-пайплайна (Magma) внешние репо не обязательны.
-
-### 3. Поставить окружение модели
-
-Один скрипт на модель, создаёт conda-env и ставит зависимости:
-
-```bash
-bash scripts/setup/setup_magma_env.sh       # Magma (основная модель bias-анализа)
-# либо: setup_openvla_env.sh, setup_spatialvla_env.sh, setup_pi0_env.sh, ...
+# SimplerEnv/ManiSkill — см. docs/SIMPLER_SETUP.md
+# InternVLA-M1, RLDX-1 — клонировать в Act2Answer/ (в .gitignore)
 ```
 
-### 4. Сгенерировать набор карточек
-
-Карточка = плоская текстурированная плитка с картинкой на верхней грани.
-Из папки картинок + CSV пар получаем drop-in ассет:
-
+### 3. Окружение модели
 ```bash
-python scripts/make_cardset.py \
-  --images    <папка с PNG/JPG> \
-  --questions <pairs.csv> \
-  --out       ManiSkill/mani_skill/assets/carrot/<cardset>
+scripts/setup_rldx.sh            # пример; у каждой модели своё
+scripts/internvla_server.sh      # zmq-сервер для server-based моделей
 ```
-`pairs.csv` — колонки `left,right,question,answer` (`answer` = `Left|Right`;
-`left`/`right` = имена файлов картинок без расширения). Собрать такой CSV из
-готового датасета помогает [`build_pairs_csv.py`](build_pairs_csv.py).
-Наши наборы: `pairs_bias` (PAIRS: occupations/status/crime), `safeeditbench`.
+
+### 4. Сгенерировать кардсет (в т.ч. кропнутый)
+```bash
+# полный набор плиток PAIRS -> плоская папка
+# кроп на человека:
+python scripts/crop_pairs_images.py --in tiles/ --out tiles_crop/ --frac 0.65
+# собрать кардсет (создаёт textured.glb — их нет в git):
+python scripts/make_cardset.py  --tiles tiles_crop/ --name pairs_bias_crop
+```
 
 ### 5. Прогнать модель в симуляторе
-
 ```bash
-ASSETS=pairs_bias COUNT=100 EVAL_GPU=0 bash scripts/eval_magma.sh
+cd Act2Answer/SimplerEnv
+python -m simpler_env.eval --vla magma \
+  --assets pairs_choice_vla_confirm --obj-set test \
+  --start-id 0 --count 1600 --shard-size 50 --buffer-inferbatch 8 [--do-swap]
+# или одним resumable-драйвером сразу по всем моделям:
+bash scripts/run_cropped_benchmark.sh
 ```
-Прогоняет эпизоды дважды — `noswap` и `swap` (карточки местами), чтобы отделить
-bias от позиционного предпочтения. Результаты (`*_stats.yaml`, логи) пишутся в
-`Act2Answer/outputs/` и `Act2Answer/logs/` (не коммитятся).
+Контрбаланс порядка — двумя прогонами `--do-swap` / без него.
 
 ### 6. (опц.) Прямой VLM-опрос — «не знает» vs «не доехал»
-
 ```bash
-GPU=0 bash scripts/run_vlmqa.sh 100 run1
+python scripts/magma_vlm_qa.py       --assets pairs_bias_crop
+python scripts/paligemma_vlm_qa.py   --assets pairs_bias_crop
 ```
-Спрашивает Magma-как-VLM тот же вопрос текстом на тех же кадрах — чтобы отделить
-незнание ответа от неудачи манипуляции. Пишет `outputs/magma_vlm_qa_pairs_bias_run1.json`.
 
-### 7. Посчитать bias
-
+### 7. Посчитать bias и пересобрать метрики
 ```bash
-python scripts/analyze_bias.py \
-  ManiSkill/mani_skill/assets/carrot/pairs_bias/pairs.json \
-  outputs/<noswap>_stats.yaml \
-  outputs/<swap>_stats.yaml \
-  magma
+python Act2Answer/scripts/build_metrics_table.py --out-dir metrics/
+python Act2Answer/scripts/compare_designs.py
+python Act2Answer/scripts/vla_fast_summary.py --model magma --prefix confirm \
+  --assets pairs_choice_vla_confirm
 ```
-Даёт разбивку по **полу** (man vs woman, раса фиксирована) и **расе**
-(white vs black, пол фиксирован). Родственные скрипты:
-`analyze_counterfactual.py`, `bias_detail.py`, `compare_vlm_vla.py`.
+→ `metrics/metrics_{yesno,choice,comparison}.csv`.
+
+---
+
+## Обязательные контроли (иначе ложные результаты — проверено)
+
+- **Негативная полярность** (напр. `boss` + `employee`) — снимает эффект «заметности» картинки.
+- **Контрбаланс порядка** (ab/ba, `--do-swap`) — снимает позиционный крен (у PaliGemma до 20пп).
+- **Проверка валидности** (чужой атрибут, `--controls`) — если ответ одинаков на свой и
+  чужой атрибут, замер бессмыслен.
+
+Подробнее — в [`BIAS_EXPERIMENTS.md`](BIAS_EXPERIMENTS.md) и [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
 ## Механистическая интерпретация (Magma)
 
-Скрипты `magma_*` работают на тех же эпизодах:
-`magma_extract_acts.py` (активации) → `magma_probe.py` (линейные пробы) /
-`magma_logit_lens.py` (logit lens) / `magma_steering.py` (стиринг) /
-`magma_counterfactual.py`. Запуск-обёртки: `run_lens.sh`, `run_steering.sh`, `run_pg.sh`.
+Отдельная линия — заглянуть внутрь Magma: `magma_probe.py` (линейные пробы),
+`magma_logit_lens.py` (logit lens), `magma_steering.py` (стиринг активаций),
+`magma_extract_acts.py`, `magma_counterfactual.py`.
 
 ---
 
-## Заметки для агентов
+## Заметки
 
-- Точка входа в код — **`Act2Answer/scripts/`**. Всё остальное в `Act2Answer/`
-  (`ManiSkill`, `SimplerEnv`, `openvla`) — вендоренный апстрим, править осторожно.
-- Скрипты **обязательно** сначала `source scripts/env.sh` — оттуда берутся пути и `PYTHONPATH`.
-- Ассеты карточек кладутся строго в `Act2Answer/ManiSkill/mani_skill/assets/carrot/<name>/`
-  и передаются флагом `--assets <name>`.
-- Данных/весов/логов в репозитории нет — их надо сгенерировать (шаги 4–6) или скачать.
+- `answer` в `pairs_bias/pairs.json` **фиктивный** (проставлен чередованием) — у вопроса
+  «кто вероятнее босс» правильного ответа нет; не считать по нему success.
+- PAIRS **не параллелен**: смена демографии меняет ~35% пикселей и фон.
+- Данные/меши/веса/медиа — **не в git** (`.gitignore`); в репо только код и структуры.
+- Правила ведения журнала и метрик для будущей работы — в [`CLAUDE.md`](CLAUDE.md).
 
 ## Благодарности
 
-Форк [Act2Answer](https://github.com/CognitiveAISystems/Act2Answer)
-(*"Does VLA Even Know the Basics?"*, [arXiv:2606.19297](https://arxiv.org/abs/2606.19297)).
-Симуляция — [ManiSkill](https://github.com/haosulab/ManiSkill) /
-[SimplerEnv](https://github.com/simpler-env/SimplerEnv).
+PAIRS (демографические пары), Act2Answer, ManiSkill / SimplerEnv (SAPIEN).

@@ -99,3 +99,11 @@ Thumbs.db
 
 # ----- Логи прогонов -----
 Act2Answer/logs/
+
+# ----- Из feat: доп. правила -----
+external/          # внешние клоны (REFLECT, SafeEditBench)
+wandb/
+runs/
+results/**/raw/
+# outputs_local/ НЕ игнорим целиком — там лежат результаты кроп-прогона (нужны в репе).
+# Тяжёлое внутри (mp4/png/csv) и так покрыто правилами выше.

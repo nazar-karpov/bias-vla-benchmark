@@ -32,6 +32,9 @@ def main():
     ap.add_argument("--carrot", type=Path, required=True, help="папка assets/carrot")
     ap.add_argument("--src", default="pairs_bias", help="кардсет-донор плиток")
     ap.add_argument("--name", default="pairs_choice")
+    ap.add_argument("--scale", type=float, default=1.0,
+                    help="масштаб плиток (model_db scales): 1.5 -> плитка ~22 см "
+                         "вместо 14.5 — тест «дело в размере» чистым сим-рычагом")
     args = ap.parse_args()
 
     src, dst = args.carrot / args.src, args.carrot / args.name
@@ -39,11 +42,17 @@ def main():
     tiles = json.loads((src / "model_db.json").read_text())
     protos = sorted({"__".join(n.split("__")[:2]) for n in tiles})
 
-    for link, target in (("shapes", src / "shapes"),
-                         ("model_db.json", src / "model_db.json")):
-        lp = dst / link
+    lp = dst / "shapes"
+    if not lp.exists():
+        lp.symlink_to((src / "shapes").resolve())
+    if args.scale == 1.0:
+        lp = dst / "model_db.json"
         if not lp.exists():
-            lp.symlink_to(target.resolve())
+            lp.symlink_to((src / "model_db.json").resolve())
+    else:
+        for e in tiles.values():
+            e["scales"] = [args.scale]
+        (dst / "model_db.json").write_text(json.dumps(tiles, indent=2))
 
     pairs, missing = [], []
     for proto in protos:

@@ -100,12 +100,25 @@ def main():
     ap.add_argument("--pairs-root", type=Path,
                     default=Path.home() / "bias_benchmark/datasets/PAIRS",
                     help="PAIRS (для --vla-questions all)")
+    ap.add_argument("--num-scenes", type=int, default=0,
+                    help="сабсемплинг сцен ШАГОМ (равномерно по алфавиту, т.е. по "
+                         "категориям occupations/crime/status): 10 -> каждая 5-я. "
+                         "0 = все 50. Для быстрых VLA-прогонов")
+    ap.add_argument("--pairs", choices=("all", "two"), default="all",
+                    help="two = по одной паре на ось (wm|ww гендер, wm|bm раса) "
+                         "вместо четырёх — вдвое быстрее")
     args = ap.parse_args()
 
     src, dst = args.carrot / args.src, args.carrot / args.name
     dst.mkdir(exist_ok=True)
     tiles = json.loads((src / "model_db.json").read_text())
     protos = sorted({"__".join(n.split("__")[:2]) for n in tiles})
+    if args.num_scenes and args.num_scenes < len(protos):
+        stride = len(protos) // args.num_scenes
+        protos = protos[::stride][:args.num_scenes]
+        print(f"сабсемплинг сцен: {len(protos)} с шагом {stride}: {protos}")
+    pair_types = PAIR_TYPES if args.pairs == "all" else \
+        [PAIR_TYPES[0], PAIR_TYPES[2]]  # wm|ww (gender), wm|bm (race)
 
     lp = dst / "shapes"
     if not lp.exists():
@@ -134,7 +147,7 @@ def main():
     pairs, missing = [], []
     for qkey, phrase, pol in blocks:
         for proto in protos:
-            for axis, da, db in PAIR_TYPES:
+            for axis, da, db in pair_types:
                 l, r = f"{proto}__{da}", f"{proto}__{db}"
                 if l not in tiles or r not in tiles:
                     missing.append((l, r))
@@ -151,13 +164,13 @@ def main():
                 pairs.append(rec)
     (dst / "pairs.json").write_text(json.dumps(pairs, indent=2))
     if args.vla_questions:
-        per_block = len(protos) * len(PAIR_TYPES)
+        per_block = len(protos) * len(pair_types)
         bmap = [{"start_id": i * per_block, "end_id": (i + 1) * per_block - 1,
                  "qkey": qk, "polarity": pol, "question_phrase": phrase}
                 for i, (qk, phrase, pol) in enumerate(blocks)]
         (dst / "blocks.json").write_text(json.dumps(bmap, indent=2))
         print(f"blocks.json: {len(bmap)} блоков по {per_block}")
-    print(f"{len(pairs)} эпизодов ({len(protos)} сцен × {len(PAIR_TYPES)} пар × "
+    print(f"{len(pairs)} эпизодов ({len(protos)} сцен × {len(pair_types)} пар × "
           f"{len(blocks)} блоков) -> {dst}")
     if missing:
         print(f"ПРОПУЩЕНО (нет плитки): {sorted(set(missing))}")

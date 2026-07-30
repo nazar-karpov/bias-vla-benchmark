@@ -12,9 +12,11 @@ vlm_sim_choice.py текстом, по 33 пары полярностей на �
 
 --vla-questions: РЕАЛЬНЫЕ вопросы в pairs.json — для прогонов VLA-моделей, которым
 инструкция подаётся из эпизода. Эпизоды идут БЛОКАМИ по 200 (вопрос × полярность ×
-50 сцен × 4 пары), блоками удобно шардировать:
-  id 0-199 boss-pos, 200-399 boss-neg (employee), 400-599 wealthy-pos, 600-799 poor,
-  800-999 suburbs-pos, 1000-1199 inner-city, 1200-1399 skier, 1400-1599 mugger.
+50 сцен × 4 пары), блоками удобно шардировать; карта блоков пишется в blocks.json.
+  subset: 4 ночные пары -> 1600 эпизодов: id 0-199 boss-pos, 200-399 employee,
+          400-799 wealthy/poor, 800-1199 suburbs/inner-city, 1200-1599 skier/mugger.
+  all:    те же 4 пары ПЕРВЫМИ (id как в subset), затем остальные 29 пар из
+          PAIRS/pairs.json (--pairs-root) -> 33×2×200 = 13200 эпизодов.
 `answer`="Left" ФИКТИВЕН (у bias-вопроса нет правильного ответа) — анализ только
 по chosen_side × swap × полярность, success не считать.
 
@@ -44,6 +46,28 @@ VLA_QUESTIONS = [
 ]
 
 
+def pairs_questions(pairs_jsonl: Path):
+    """Все уникальные (pos, neg) фразы из PAIRS/pairs.json, С АРТИКЛЕМ
+    («a pilot», «the boss», «wealthy») — как они стоят в исходных statements."""
+    import re
+
+    def phrase(stmt):
+        m = re.search(r"more probably (.+)$", stmt.strip())
+        return m.group(1).strip().rstrip("?.") if m else None
+
+    out = []
+    for line in pairs_jsonl.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        r = json.loads(line)
+        p, n = phrase(r.get("positive", "")), phrase(r.get("negative", ""))
+        if p and n and (p, n) not in [(a, b) for _, a, b in out]:
+            key = re.sub(r"^(a|an|the) ", "", p).replace(" ", "_").replace("-", "_")
+            out.append((key, p, n))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--carrot", type=Path, required=True, help="папка assets/carrot")
@@ -52,9 +76,13 @@ def main():
     ap.add_argument("--scale", type=float, default=1.0,
                     help="масштаб плиток (model_db scales): 1.5 -> плитка ~22 см "
                          "вместо 14.5 — тест «дело в размере» чистым сим-рычагом")
-    ap.add_argument("--vla-questions", action="store_true",
-                    help="реальные вопросы в pairs.json блоками вопрос×полярность "
-                         "(1600 эпизодов) — для VLA-прогонов")
+    ap.add_argument("--vla-questions", choices=("subset", "all"), default=None,
+                    help="реальные вопросы в pairs.json блоками вопрос×полярность — "
+                         "для VLA-прогонов. subset: 4 ночные пары (1600 эп.); "
+                         "all: + остальные 29 пар PAIRS (13200 эп.)")
+    ap.add_argument("--pairs-root", type=Path,
+                    default=Path.home() / "bias_benchmark/datasets/PAIRS",
+                    help="PAIRS (для --vla-questions all)")
     args = ap.parse_args()
 
     src, dst = args.carrot / args.src, args.carrot / args.name
@@ -75,7 +103,13 @@ def main():
         (dst / "model_db.json").write_text(json.dumps(tiles, indent=2))
 
     if args.vla_questions:
-        blocks = [(qk, phrase, pol) for qk, pos, neg in VLA_QUESTIONS
+        questions = list(VLA_QUESTIONS)
+        if args.vla_questions == "all":
+            night_pairs = {(p, n) for _, p, n in VLA_QUESTIONS}
+            for key, p, n in pairs_questions(args.pairs_root / "pairs.json"):
+                if (p, n) not in night_pairs:
+                    questions.append((key, p, n))
+        blocks = [(qk, phrase, pol) for qk, pos, neg in questions
                   for phrase, pol in ((pos, "pos"), (neg, "neg"))]
     else:
         blocks = [(None, None, None)]
@@ -99,6 +133,13 @@ def main():
                            "qkey": qkey, "polarity": pol, "axis": axis}
                 pairs.append(rec)
     (dst / "pairs.json").write_text(json.dumps(pairs, indent=2))
+    if args.vla_questions:
+        per_block = len(protos) * len(PAIR_TYPES)
+        bmap = [{"start_id": i * per_block, "end_id": (i + 1) * per_block - 1,
+                 "qkey": qk, "polarity": pol, "question_phrase": phrase}
+                for i, (qk, phrase, pol) in enumerate(blocks)]
+        (dst / "blocks.json").write_text(json.dumps(bmap, indent=2))
+        print(f"blocks.json: {len(bmap)} блоков по {per_block}")
     print(f"{len(pairs)} эпизодов ({len(protos)} сцен × {len(PAIR_TYPES)} пар × "
           f"{len(blocks)} блоков) -> {dst}")
     if missing:

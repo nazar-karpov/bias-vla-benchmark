@@ -11,9 +11,19 @@ cd "$REPO"
 CKPT="$(cat "$REPO/.rldx_ckpt_path.txt" 2>/dev/null)"
 [ -n "$CKPT" ] || { echo "no rldx ckpt path (run setup_rldx.sh first)"; exit 1; }
 
-# V100 (Volta) has no FlashAttention2 -> force sdpa for the VLM backbone.
+# Attention backend: flash-attn only builds/runs on Ampere+ (sm_80+). On Volta
+# (V100, sm_70) the load succeeds but the first forward dies with
+# "FlashAttention only supports Ampere GPUs or newer". Auto-fall-back to sdpa
+# when the visible GPU's compute capability is < 8.0, unless RLDX_ATTN_IMPL is
+# already set by the caller. Ampere+ boxes (H100) keep flash-attn for throughput.
 # adapter.py reads RLDX_ATTN_IMPL (default flash_attention_2).
-export RLDX_ATTN_IMPL="${RLDX_ATTN_IMPL:-sdpa}"
+if [ -z "${RLDX_ATTN_IMPL:-}" ]; then
+  CC_MAJOR="$(uv run python -c 'import torch;print(torch.cuda.get_device_capability(0)[0] if torch.cuda.is_available() else 0)' 2>/dev/null || echo 0)"
+  if [ "${CC_MAJOR:-0}" -lt 8 ] 2>/dev/null; then
+    export RLDX_ATTN_IMPL=sdpa
+    echo "RLDX_ATTN_IMPL=sdpa (GPU compute capability ${CC_MAJOR}.x < 8.0, flash-attn unsupported)"
+  fi
+fi
 
 # widowx_bridge -> OXE_BRIDGE_ORIG (the SIMPLER-WidowX checkpoint's embodiment tag,
 # per RLDX run_scripts/eval/simpler/README.md; GENERAL_EMBODIMENT is not in this

@@ -17,6 +17,41 @@
 
 ---
 
+## 2026-07-31 — RLDX на V100: фикс flash-attn (sdpa) + прогон на cropped pairs_bias
+
+**Контекст:** нужно было прогнать RLDX-1 на V100 на нашем cropped-кардсете
+(`pairs_bias_crop`, occupations) с чекпоинтом, файнтюненным под нашу симуляцию.
+Оказалось, что «общего» чекпоинта в установке нет вообще: `setup_rldx.sh` качает
+только `RLWRLD/RLDX-1-FT-SIMPLER-WIDOWX` — это и есть файнтюн под SIMPLER-WidowX,
+на нём же настроен zmq policy-сервер. Прошлый прогон (28.07) был помечен `.done`,
+но, судя по всему, шёл на H100.
+
+**Сделано:**
+- Подняли RLDX-сервер на V100 — первый же inference упал:
+  `RLDX server error: FlashAttention only supports Ampere GPUs or newer`. V100 =
+  Volta (sm_70), flash-attn собирается/работает только с Ampere (sm_80+).
+- В `adapter.py` нашёлся штатный env-переключатель `RLDX_ATTN_IMPL` (дефолт
+  `flash_attention_2`). Пропатчили `scripts/rldx_server.sh`: автодетект
+  compute capability GPU через torch, при `CC<8.0` форсим `RLDX_ATTN_IMPL=sdpa`,
+  на Ampere+ (H100) оставляем flash-attn. Код модели не трогали.
+- Перезапустили `run_cropped_benchmark.sh MODELS=rldx COUNT=55` (сервер GPU0,
+  клиент+рендер GPU3). sdpa-путь заработал, обе раскладки прошли до FINAL_STATS.
+
+**Результат:**
+- success: noswap **0.183**, swap **0.165**. Прогон медленный (sdpa, ~25 с/шаг,
+  80 шагов × 55 эп. × 2 раскладки ≈ 1.5 ч).
+- Answer-rate **27%** (30 из 110 прогонов доехали до плитки) — типично низкий для
+  VLA, n маленький.
+- Bias (`analyze_bias.py`, chosen_side с контрбалансом swap): **пол** −7.7%
+  (6 man / 7 woman, n=13 — шум); **раса** **+29.4% к white** (11 white / 6 black,
+  n=17). Направление «раса→white» согласуется с magma/pali из прошлых замеров, но
+  при таком n — только намёк, не подтверждение.
+
+**Дальше:** тупик метода — answer-rate 27% душит статистику. Чтобы получить
+осмысленный n по RLDX, нужен либо больший COUNT (дороже: sdpa медленный), либо
+дизайн с более читаемым стимулом (конкат/кроп сильнее — см. лесенку 30.07). Патч
+sdpa теперь позволяет гонять RLDX на V100 без H100.
+
 ## 2026-07-30 — Первый VLA-bias-замер (core6) + H100 + hard/soft/first_touch
 
 **Контекст:** после ночной VLM-серии (лесенка читаемости, стандарт scale 1.3) нужен

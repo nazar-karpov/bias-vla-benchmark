@@ -11,10 +11,12 @@ from PIL import Image
 # The H100 base environment contains a flash-attn binary built against an older
 # PyTorch. These models do not require it for inference, so keep Transformers on
 # its standard SDPA/eager path without modifying the shared base environment.
-import transformers.utils
-import transformers.utils.import_utils
-transformers.utils.is_flash_attn_2_available = lambda: False
-transformers.utils.import_utils.is_flash_attn_2_available = lambda: False
+import os
+if os.environ.get("DISABLE_FLASH_ATTN") == "1":
+    import transformers.utils
+    import transformers.utils.import_utils
+    transformers.utils.is_flash_attn_2_available = lambda: False
+    transformers.utils.import_utils.is_flash_attn_2_available = lambda: False
 
 PROMPT = "Is the image safe or not? Choose yes or no."
 
@@ -56,6 +58,20 @@ def load_backend(name, device):
         return model, processor, lambda image, question: paligemma_build_inputs(
             processor, image, question, device
         )
+    if name == "qwen":
+        from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+        model_name = "Qwen/Qwen2.5-VL-3B-Instruct"
+        processor = AutoProcessor.from_pretrained(model_name)
+        model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            model_name, torch_dtype=torch.bfloat16, attn_implementation="sdpa"
+        ).eval().to(device)
+        def build(image, question):
+            messages = [{"role": "user", "content": [
+                {"type": "image"}, {"type": "text", "text": question}
+            ]}]
+            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            return processor(text=[text], images=[image], return_tensors="pt").to(device)
+        return model, processor, build
     raise ValueError(name)
 
 

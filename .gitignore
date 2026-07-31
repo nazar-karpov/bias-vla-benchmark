@@ -72,6 +72,10 @@ __pycache__/
 .venv/
 venv/
 env/
+# generic env/ выше глушит venv, но simpler_env/env/ — это КОД (SimplerWrapper),
+# от которого зависит весь eval. Разгораживаем.
+!Act2Answer/SimplerEnv/simpler_env/env/
+!Act2Answer/SimplerEnv/simpler_env/env/**
 .ipynb_checkpoints/
 
 # ----- ОС / IDE -----

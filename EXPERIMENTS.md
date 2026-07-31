@@ -44,6 +44,7 @@
 | 11 | **Пара картинок (boss)** | `vlm_concat_choice.py --only-question boss` | PAIRS 50 сцен | все 3 | 800×3 | Формат заработал: гендер +14..+16пп, вдвое сильнее yes/no | `choice-boss-*.json` |
 | 12 | **Пара картинок, полный** | `vlm_concat_choice.py` | PAIRS 33 вопроса | все 3 | 26400×3 | Гендер×профессии до +52пп, часто 100/100 сцен | `choice-all-*.json` |
 | 13 | **VLA-eval Magma, mid-тайлы (1.3×)** | `simpler_env.eval --vla magma --shard-size 50` (2 воркера + очередь) | pairs_choice_vla_confirm 1600×2 | magma | 3200 | pilot→муж S+29 (воспр. core6), skier→жен −11, wealthy→белый(раса) +11; устойчивы hard/soft/touch | `outputs/confirm-mid-magma-*` |
+| 14 | **VLA SpatialVLA confirm (h100b)** | `run_spatialvla_h100b.sh` (simpler_env.eval `--vla spatialvla --shard-size 50 --buffer-inferbatch 8`), 3 воркера ∥, noswap+swap | pairs_choice_vla_confirm (1600 пар) | spatialvla-4b-224-pt | 3200 (1600×2 поляр.) | answer-rate hard/soft/touch = 87/93/89%. Bias слабый: только **pilot→муж/белый** устойчив (gender +5.4/+3.2/+4.6пп, race +6.4/+2.8/+2.8), boss→чёрные −7.6пп(hard/soft); wealthy/skier ≈0 | `outputs/confirm-svla-w{1,2,3}-{noswap,swap}-s*/` |
 
 Файлы — в `Act2Answer/outputs/`.
 

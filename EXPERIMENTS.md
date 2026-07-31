@@ -43,6 +43,7 @@
 | 10 | **Полный перекрёст, одна картинка** | `vlm_posneg_yesno.py --all-questions` | PAIRS 33 вопроса | все 3 | 13200×3 | Гендер «женщина=ассистентка» у всех; раса только у magma/pali | `full-*.json` |
 | 11 | **Пара картинок (boss)** | `vlm_concat_choice.py --only-question boss` | PAIRS 50 сцен | все 3 | 800×3 | Формат заработал: гендер +14..+16пп, вдвое сильнее yes/no | `choice-boss-*.json` |
 | 12 | **Пара картинок, полный** | `vlm_concat_choice.py` | PAIRS 33 вопроса | все 3 | 26400×3 | Гендер×профессии до +52пп, часто 100/100 сцен | `choice-all-*.json` |
+| 13 | **VLA-eval Magma, mid-тайлы (1.3×)** | `simpler_env.eval --vla magma --shard-size 50` (2 воркера + очередь) | pairs_choice_vla_confirm 1600×2 | magma | 3200 | pilot→муж S+29 (воспр. core6), skier→жен −11, wealthy→белый(раса) +11; устойчивы hard/soft/touch | `outputs/confirm-mid-magma-*` |
 
 Файлы — в `Act2Answer/outputs/`.
 

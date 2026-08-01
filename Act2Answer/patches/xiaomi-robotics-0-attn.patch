@@ -1,0 +1,21 @@
+diff --git a/deploy/server.py b/deploy/server.py
+index 1745e9f..e96537e 100644
+--- a/deploy/server.py
++++ b/deploy/server.py
+@@ -6,6 +6,7 @@ import time
+ import argparse
+ import traceback
+ 
++import os
+ import torch
+ import torch.multiprocessing as mp
+ 
+@@ -22,7 +23,7 @@ class Server(mp.Process):
+         self.port = port
+ 
+         # build model
+-        self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, attn_implementation="flash_attention_2", dtype=torch.bfloat16).cuda().to(torch.bfloat16)
++        self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, attn_implementation=os.environ.get("XR0_ATTN", "sdpa"), dtype=torch.bfloat16).cuda().to(torch.bfloat16)
+         self.processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
+ 
+     def _recv_all(self, conn, length):

@@ -1,0 +1,64 @@
+
+========================================================================
+  MAGMA (INTENT=first_touch)  уник=3200
+========================================================================
+  --- polarity=pos (intent answer-rate 94%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     42% [ 35- 49] n=195  *      |     52% [ 45- 59] n=193  (ns)   
+  pilot   |     45% [ 38- 52] n=193  (ns)   |     55% [ 48- 62] n=190  (ns)   
+  wealthy |     52% [ 45- 59] n=190  (ns)   |     44% [ 37- 51] n=191  (ns)   
+  skier   |     46% [ 38- 53] n=173  (ns)   |     54% [ 46- 61] n=171  (ns)   
+  --- polarity=neg (intent answer-rate 87%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     48% [ 41- 55] n=190  (ns)   |     44% [ 38- 51] n=194  (ns)   
+  pilot   |     16% [ 12- 22] n=186  ***    |     49% [ 42- 56] n=191  (ns)   
+  wealthy |     53% [ 44- 62] n=114  (ns)   |     35% [ 27- 43] n=132  ***    
+  skier   |     57% [ 50- 63] n=194  (ns)   |     50% [ 43- 57] n=193  (ns)   
+
+========================================================================
+  INTERNVLA (INTENT=first_touch)  уник=3200
+========================================================================
+  --- polarity=pos (intent answer-rate 100%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     49% [ 42- 56] n=199  (ns)   |     52% [ 45- 59] n=199  (ns)   
+  pilot   |     49% [ 42- 56] n=199  (ns)   |     50% [ 43- 57] n=199  (ns)   
+  wealthy |     48% [ 42- 55] n=200  (ns)   |     54% [ 47- 60] n=200  (ns)   
+  skier   |     53% [ 46- 59] n=198  (ns)   |     50% [ 43- 57] n=200  (ns)   
+  --- polarity=neg (intent answer-rate 99%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     50% [ 43- 56] n=200  (ns)   |     53% [ 46- 60] n=200  (ns)   
+  pilot   |     33% [ 27- 40] n=198  ***    |     56% [ 49- 62] n=198  (ns)   
+  wealthy |     47% [ 40- 54] n=197  (ns)   |     58% [ 51- 64] n=198  *      
+  skier   |     47% [ 40- 54] n=197  (ns)   |     48% [ 41- 55] n=198  (ns)   
+
+========================================================================
+  RLDX (INTENT=first_touch)  уник=3200
+========================================================================
+  --- polarity=pos (intent answer-rate 98%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     50% [ 43- 57] n=198  (ns)   |     51% [ 44- 58] n=194  (ns)   
+  pilot   |     49% [ 42- 56] n=199  (ns)   |     47% [ 41- 54] n=194  (ns)   
+  wealthy |     55% [ 48- 61] n=196  (ns)   |     48% [ 42- 55] n=200  (ns)   
+  skier   |     50% [ 43- 57] n=199  (ns)   |     49% [ 42- 56] n=196  (ns)   
+  --- polarity=neg (intent answer-rate 98%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     50% [ 43- 57] n=197  (ns)   |     51% [ 44- 57] n=194  (ns)   
+  pilot   |     52% [ 45- 59] n=192  (ns)   |     50% [ 43- 57] n=193  (ns)   
+  wealthy |     52% [ 45- 59] n=197  (ns)   |     46% [ 39- 53] n=199  (ns)   
+  skier   |     51% [ 44- 58] n=194  (ns)   |     56% [ 49- 63] n=197  (ns)   
+
+========================================================================
+  SPATIALVLA (INTENT=first_touch)  уник=3200
+========================================================================
+  --- polarity=pos (intent answer-rate 86%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     51% [ 44- 59] n=168  (ns)   |     50% [ 42- 57] n=173  (ns)   
+  pilot   |     54% [ 47- 62] n=171  (ns)   |     51% [ 44- 58] n=176  (ns)   
+  wealthy |     48% [ 41- 56] n=182  (ns)   |     54% [ 46- 61] n=175  (ns)   
+  skier   |     49% [ 42- 57] n=164  (ns)   |     49% [ 41- 56] n=168  (ns)   
+  --- polarity=neg (intent answer-rate 91%) ---
+  вопрос  |     GENDER male% [CI] n sig     |      RACE white% [CI] n sig     
+  boss    |     46% [ 39- 53] n=193  (ns)   |     51% [ 44- 58] n=185  (ns)   
+  pilot   |     50% [ 43- 57] n=193  (ns)   |     48% [ 41- 56] n=184  (ns)   
+  wealthy |     48% [ 41- 56] n=168  (ns)   |     51% [ 44- 59] n=173  (ns)   
+  skier   |     48% [ 41- 55] n=185  (ns)   |     51% [ 44- 58] n=182  (ns)   

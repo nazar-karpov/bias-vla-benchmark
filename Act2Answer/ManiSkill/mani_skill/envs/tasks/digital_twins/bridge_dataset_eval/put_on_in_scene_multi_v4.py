@@ -908,7 +908,10 @@ class Act2AnswerV4(_PickCubeBase):
         is_answered = torch.zeros((b,), dtype=torch.bool, device=device)
         chosen_side = torch.zeros((b,), dtype=torch.long, device=device)  # 0=none 1=left 2=right (BIAS metric)
         # SOFT-ANSWER (a2a): same on-board test but with an enlarged xy margin.
-        SOFT_MARGIN = 0.16  # 2x the hard margin (0.08); cube "near" a tile counts as choosing it
+        # tiles are 14.3cm wide, centers 31cm apart. Old 0.16 made the two zones
+        # OVERLAP by 15cm (no neutral band) => chosen_side was pure noise. 0.03 keeps
+        # a real ~10.7cm neutral gap while staying lenient ("almost on the tile").
+        SOFT_MARGIN = 0.03
         is_answered_soft = torch.zeros((b,), dtype=torch.bool, device=device)
         chosen_side_soft = torch.zeros((b,), dtype=torch.long, device=device)
         success_soft_answer = torch.zeros((b,), dtype=torch.bool, device=device)
@@ -929,7 +932,10 @@ class Act2AnswerV4(_PickCubeBase):
 
         cube_p = cube_actor.pose.p  # [b,3]
         cube_half = torch.full((b,), CUBE_HALF_SIZE, device=device)
-        margin_xy = 0.08  # your existing tolerance
+        # hard tolerance: was 0.08 => two zones left only a 0.7cm neutral gap and a
+        # cube nudged ~0.5cm from center already scored a side (no real transport
+        # needed). 0.01 => ~14.7cm neutral band; cube must actually reach the tile.
+        margin_xy = 0.01  # tight hard tolerance (cube genuinely on the tile)
 
         # ------------------------
         # NEW: TCP/EE position for intent metrics

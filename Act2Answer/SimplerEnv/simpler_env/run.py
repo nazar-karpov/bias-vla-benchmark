@@ -264,6 +264,13 @@ class Runner:
             host = os.environ.get("RLDX_HOST", "127.0.0.1")
             port = int(os.environ.get("RLDX_PORT", "20000"))
             self.policy = RLDXInference(host=host, port=port, policy_setup=policy_setup)
+        elif all_args.vla_kind == "pi05":
+            from simpler_env.policies.pi05.pi05 import Pi05Inference
+
+            policy_setup = "widowx_bridge"
+            host = os.environ.get("PI05_HOST", "127.0.0.1")
+            port = int(os.environ.get("PI05_PORT", "20005"))
+            self.policy = Pi05Inference(host=host, port=port, policy_setup=policy_setup)
         else:
             raise ValueError("Unknown VLA kind")
 

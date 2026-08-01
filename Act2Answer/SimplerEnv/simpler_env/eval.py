@@ -101,6 +101,13 @@ VLA_CONFIGS: dict[str, VLAConfig] = {
         default_buffer_inferbatch=9,
         default_vla_path="",
     ),
+    "pi05": VLAConfig(
+        vla_kind="pi05",
+        default_assets="pairs_choice_vla_confirm",
+        default_count=9,
+        default_buffer_inferbatch=9,
+        default_vla_path="",
+    ),
 }
 
 

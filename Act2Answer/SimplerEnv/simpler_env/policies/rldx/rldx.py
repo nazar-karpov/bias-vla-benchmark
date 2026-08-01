@@ -120,17 +120,12 @@ class RLDXInference:
         self._first_step: dict[int, bool] = {}   # per-env: is this the first query?
         self._frames: dict[int, deque] = {}     # per-env ring buffer of resized frames
         self._chunks: dict[int, deque] = {}      # per-env action-chunk buffer
-        self._sticky_on: dict[int, bool] = {}
-        self._sticky_val: dict[int, float] = {}
-        self._sticky_rep: dict[int, int] = {}
-        self.sticky_num_repeat = 1               # widowx
 
     # ---- required by run.py's render loop -----------------------------------
     def prep_rollout(self):
         self.client.reset()
         self._first_step.clear()
         self._frames.clear(); self._chunks.clear()
-        self._sticky_on.clear(); self._sticky_val.clear(); self._sticky_rep.clear()
 
     @staticmethod
     def _sid(env_i: int) -> str:
@@ -187,22 +182,14 @@ class RLDXInference:
         }
 
     def _postprocess_gripper(self, env_i: int, g_close: float) -> float:
-        # RLDX action `gripper_close` in [0,1] (1=close). widowx wants [-1,1] where
-        # -1=open/1=close relative, with sticky repeat. Mirror RLDX widowx wrapper:
-        # wrapper feeds raw gripper then sticky; here gripper_close already ~[0,1].
-        cur = (g_close * 2.0) - 1.0
-        rel = cur
-        if abs(rel) > 0.5 and not self._sticky_on.get(env_i, False):
-            self._sticky_on[env_i] = True
-            self._sticky_val[env_i] = rel
-        if self._sticky_on.get(env_i, False):
-            self._sticky_rep[env_i] = self._sticky_rep.get(env_i, 0) + 1
-            rel = self._sticky_val[env_i]
-        if self._sticky_rep.get(env_i, 0) == self.sticky_num_repeat:
-            self._sticky_on[env_i] = False
-            self._sticky_rep[env_i] = 0
-            self._sticky_val[env_i] = 0.0
-        return rel
+        # RLDX model outputs `gripper_close` in [0,1]: 1=close(grasp), 0=open. It is
+        # an ABSOLUTE gripper command, not a relative one, so the SimplerEnv-style
+        # sticky machine is WRONG here — it latched a stale value for 15 steps and
+        # inverted the phase (gripper opened exactly when the model wanted to hold
+        # the grasp), so the cube slipped out on transport. Map directly to widowx
+        # [-1,1] with a threshold (mirrors RLDX CALVIN eval: gripper_close>0 -> close).
+        # widowx convention: +1 = close/grasp, -1 = open.
+        return 1.0 if g_close > 0.5 else -1.0
 
     def _next_action_vec(self, env_i: int, image: np.ndarray, instruction: str,
                          proprio=None) -> np.ndarray:

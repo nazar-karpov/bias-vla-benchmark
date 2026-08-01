@@ -35,7 +35,8 @@ import cv2
 import msgpack
 import numpy as np
 import torch
-from transforms3d.euler import euler2axangle
+from transforms3d.euler import euler2axangle, mat2euler
+from transforms3d.quaternions import quat2mat
 
 
 # --------------------------------------------------------------------- wire ---
@@ -98,7 +99,10 @@ class _RLDXClient:
 
 
 # ------------------------------------------------------------------- policy ---
-_IMG_H, _IMG_W = 256, 320           # RLDX widowx image_size (rows, cols)
+_IMG_H, _IMG_W = 256, 256           # RLDX widowx image_size (rows, cols); official
+                                    # SimplerEnv wrapper uses (256,256) square, not 320
+# bridge ee-rotation frame (top-down), matches official WidowXBridgeEnv wrapper
+_BRIDGE_DEFAULT_ROT = np.array([[0, 0, 1.0], [0, 1.0, 0], [-1.0, 0, 0]])
 _VIDEO_KEY = "image_0"
 _VIDEO_DELTAS = [-6, -4, -2, 0]     # bridge_orig video delta_indices (T=4)
 _RING = 7                           # need frames back to t-6
@@ -153,16 +157,31 @@ class RLDXInference:
                 out.append(ring[0])        # pad with the oldest available frame
         return np.stack(out).astype(np.uint8)
 
-    def _pack_obs(self, env_i: int, image_hw3_uint8: np.ndarray, instruction: str) -> dict:
+    @staticmethod
+    def _state_from_proprio(proprio):
+        """Build (eef_pos xyz, eef_rot euler top-down, gripper) from SimplerEnv
+        proprio = agent eef_pos [x,y,z, quat_wxyz(4), gripper(1)], matching the
+        official RLDX WidowXBridgeEnv wrapper (_process_observation)."""
+        if proprio is None:
+            return (np.zeros(3, np.float32), np.zeros(3, np.float32), 0.0)
+        p = np.asarray(proprio, dtype=np.float64).reshape(-1)
+        pos = p[0:3].astype(np.float32)
+        rm = quat2mat(p[3:7])
+        euler = np.asarray(mat2euler(rm @ _BRIDGE_DEFAULT_ROT.T), dtype=np.float32)
+        gripper = float(p[7]) if p.shape[0] > 7 else 0.0
+        return (pos, euler, gripper)
+
+    def _pack_obs(self, env_i: int, image_hw3_uint8: np.ndarray, instruction: str,
+                  proprio=None) -> dict:
         frame = cv2.resize(image_hw3_uint8, (_IMG_W, _IMG_H)).astype(np.uint8)  # (cols,rows)
         vid = self._video_stack(env_i, frame)[None]        # (B=1, T=4, H, W, 3)
-        z3 = np.zeros((1, 1, 3), dtype=np.float32)
+        pos, euler, gripper = self._state_from_proprio(proprio)
         return {
             "video": {_VIDEO_KEY: vid},
             "state": {
-                "end_effector_position": z3.copy(),
-                "end_effector_rotation": z3.copy(),      # neutral euler (0,0,0)
-                "gripper_position": np.zeros((1, 1, 1), dtype=np.float32),
+                "end_effector_position": pos.reshape(1, 1, 3).astype(np.float32),
+                "end_effector_rotation": euler.reshape(1, 1, 3).astype(np.float32),
+                "gripper_position": np.array([[[gripper]]], dtype=np.float32),
             },
             "language": {"annotation.human.action.task_description": [[instruction]]},
         }
@@ -185,14 +204,15 @@ class RLDXInference:
             self._sticky_val[env_i] = 0.0
         return rel
 
-    def _next_action_vec(self, env_i: int, image: np.ndarray, instruction: str) -> np.ndarray:
+    def _next_action_vec(self, env_i: int, image: np.ndarray, instruction: str,
+                         proprio=None) -> np.ndarray:
         buf = self._chunks.get(env_i)
         if not buf:
             is_first = self._first_step.get(env_i, True)
             self._first_step[env_i] = False
             options = {"reset_memory": [is_first], "session_ids": [self._sid(env_i)]}
             action, _info = self.client.get_action(
-                self._pack_obs(env_i, image, instruction), options=options
+                self._pack_obs(env_i, image, instruction, proprio), options=options
             )
             # server returns batched actions (B=1, chunk, D); drop the batch axis.
             pos = np.asarray(action[_ACT_POS], dtype=np.float64)
@@ -229,5 +249,20 @@ class RLDXInference:
         if isinstance(instructions, str):
             instructions = [instructions] * images.shape[0]
 
-        vecs = [self._next_action_vec(i, images[i], instructions[i]) for i in range(images.shape[0])]
+        # real proprio (agent eef_pos) per env, as the official RLDX wrapper uses;
+        # feeding zeros here was the answer-rate killer. run.py passes obs['proprio'].
+        proprio = obs.get("proprio")
+
+        def _proprio_i(i):
+            if proprio is None:
+                return None
+            pr = proprio[i]
+            if isinstance(pr, dict):
+                pr = pr.get("agent", pr)
+                if isinstance(pr, dict):
+                    pr = pr.get("eef_pos")
+            return pr.cpu().numpy() if hasattr(pr, "cpu") else pr
+
+        vecs = [self._next_action_vec(i, images[i], instructions[i], _proprio_i(i))
+                for i in range(images.shape[0])]
         return torch.from_numpy(np.stack(vecs)).float().cuda()

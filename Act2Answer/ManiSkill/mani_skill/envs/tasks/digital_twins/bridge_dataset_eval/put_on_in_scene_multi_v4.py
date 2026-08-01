@@ -1231,6 +1231,12 @@ class Act2AnswerV4(_PickCubeBase):
         self.episode_stats["cube_fx"] = cube_p[:, 0].clone()
         self.episode_stats["cube_fy"] = cube_p[:, 1].clone()
         self.episode_stats["cube_fz"] = cube_p[:, 2].clone()
+        # Финальная позиция ГРИППЕРА (TCP): «фантомный» канал намерения — модели,
+        # теряющие куб (RLDX), всё равно доводят руку к выбранной плитке. Позволяет
+        # постфактум считать tcp-side теми же зонами, что и cube-side.
+        self.episode_stats["tcp_fx"] = tcp_p[:, 0].clone()
+        self.episode_stats["tcp_fy"] = tcp_p[:, 1].clone()
+        self.episode_stats["tcp_fz"] = tcp_p[:, 2].clone()
         _bl = torch.stack([self.objs_board[self._current_left_names[i]].pose.p[i] for i in range(b)])
         _br = torch.stack([self.objs_board[self._current_right_names[i]].pose.p[i] for i in range(b)])
         self.episode_stats["boardL_y"] = _bl[:, 1].clone()

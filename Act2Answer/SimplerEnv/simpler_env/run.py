@@ -244,7 +244,9 @@ class Runner:
 
             policy_setup = "widowx_bridge"
             vla_path = all_args.vla_path
-            self.policy = M1Inference(vla_path, policy_setup=policy_setup)
+            _ivla_host = os.environ.get("INTERNVLA_HOST", "127.0.0.1")
+            _ivla_port = int(os.environ.get("INTERNVLA_PORT", "10093"))
+            self.policy = M1Inference(vla_path, policy_setup=policy_setup, host=_ivla_host, port=_ivla_port)
         elif all_args.vla_kind == "xiaomi":
             from simpler_env.policies.xiaomi.xiaomi import XiaomiRoboticsPolicy
 

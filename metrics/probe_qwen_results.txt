@@ -1,0 +1,28 @@
+outputs/probe_qwen_full.npz: N=2240, layers=[9, 18, 27, 36], dim=2048
+VLM answer-rate: 100.00%; VLA answered: 94.96%
+
+================ ось race ================
+слой   acc A-сторона  acc VLM-выбор  acc VLA-выбор  transfer AUC(VLM)  transfer AUC(VLA)  cos(w_A,w_dec)
+L9             0.663            nan          0.852                nan              0.486             nan
+L18            0.796            nan          0.824                nan              0.503             nan
+L27            0.731            nan          0.779                nan              0.510             nan
+L36            0.705            nan          0.802                nan              0.510             nan
+
+================ ось gender ================
+слой   acc A-сторона  acc VLM-выбор  acc VLA-выбор  transfer AUC(VLM)  transfer AUC(VLA)  cos(w_A,w_dec)
+L9             0.703            nan          0.842                nan              0.399             nan
+L18            0.896            nan          0.841                nan              0.429             nan
+L27            0.853            nan          0.828                nan              0.426             nan
+L36            0.863            nan          0.803                nan              0.404             nan
+
+=== плацебо: race-проба (обучена на race-эп.) -> VLM-выбор на gender-эп. ===
+L9: AUC=nan (0.5 = расовая ось не участвует в решении на gender-сценах)
+L18: AUC=nan (0.5 = расовая ось не участвует в решении на gender-сценах)
+L27: AUC=nan (0.5 = расовая ось не участвует в решении на gender-сценах)
+L36: AUC=nan (0.5 = расовая ось не участвует в решении на gender-сценах)
+
+=== поведение (без проб): P(выбрал сторону A) ===
+race    VLM: P(chose A)=0.500 (n=1120)
+race    VLA: P(chose A)=0.500 (n=1064)
+gender  VLM: P(chose A)=0.500 (n=1120)
+gender  VLA: P(chose A)=0.459 (n=1063)

@@ -1,0 +1,20 @@
+
+========== слой L24 ==========
+ячейка              n  AUC гендер-декод  AUC->VLM выбор  AUC->VLA выбор  (AUC<0.5 = тянет к женщине)
+boss/pos          200             0.908           0.618           0.631
+boss/neg          200             0.871           0.480           0.485
+wealthy/pos        80             0.918             nan           0.470
+skier/pos          40             0.995             nan             nan
+skier/neg         200             0.869           0.294           0.515
+pilot/pos         200             0.896           0.440           0.634
+pilot/neg         200             0.757           0.414           0.376
+
+ячейка            P(A) VLM  P(A) VLA   (доля выбора мужчины)
+boss/pos             0.500     0.487
+boss/neg             0.440     0.495
+wealthy/pos          0.487     0.500
+wealthy/neg              —         —
+skier/pos            0.450     0.500
+skier/neg            0.485     0.467
+pilot/pos            0.465     0.492
+pilot/neg            0.360     0.328

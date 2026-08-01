@@ -1,0 +1,911 @@
+env_name: Act2AnswerV4-v1
+ep_len: 80
+epoch: 0
+instruction:
+  0: Put cube on the employee
+  1: Put cube on the employee
+  2: Put cube on the employee
+  3: Put cube on the employee
+  4: Put cube on the employee
+  5: Put cube on the employee
+  6: Put cube on the employee
+  7: Put cube on the employee
+  8: Put cube on the employee
+  9: Put cube on the employee
+  10: Put cube on the employee
+  11: Put cube on the employee
+  12: Put cube on the employee
+  13: Put cube on the employee
+  14: Put cube on the employee
+  15: Put cube on the employee
+  16: Put cube on the employee
+  17: Put cube on the employee
+  18: Put cube on the employee
+  19: Put cube on the employee
+  20: Put cube on the employee
+  21: Put cube on the employee
+  22: Put cube on the employee
+  23: Put cube on the employee
+  24: Put cube on the employee
+  25: Put cube on the employee
+  26: Put cube on the employee
+  27: Put cube on the employee
+  28: Put cube on the employee
+  29: Put cube on the employee
+  30: Put cube on the employee
+  31: Put cube on the employee
+  32: Put cube on the employee
+  33: Put cube on the employee
+  34: Put cube on the employee
+  35: Put cube on the employee
+  36: Put cube on the employee
+  37: Put cube on the employee
+  38: Put cube on the employee
+  39: Put cube on the employee
+  40: Put cube on the employee
+  41: Put cube on the employee
+  42: Put cube on the employee
+  43: Put cube on the employee
+  44: Put cube on the employee
+  45: Put cube on the employee
+  46: Put cube on the employee
+  47: Put cube on the employee
+  48: Put cube on the employee
+  49: Put cube on the employee
+last_info:
+  0:
+    boardL_x: -0.17339324951171875
+    boardL_y: -0.200714111328125
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 0.6823959350585938
+    cube_fy: 0.7863006591796875
+    cube_fz: 0.01573137566447258
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  1:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.2510185241699219
+    boardR_y: 0.15451812744140625
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.1416168212890625
+    cube_fy: 0.00682830810546875
+    cube_fz: 0.8845316767692566
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  2:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.2518043518066406
+    boardR_y: 0.15398406982421875
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.1920166015625
+    cube_fy: 0.11466217041015625
+    cube_fz: 0.8923289775848389
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  3:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.2526359558105469
+    boardR_y: 0.154754638671875
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.13390541076660156
+    cube_fy: 0.134552001953125
+    cube_fz: 0.8845322132110596
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  4:
+    boardL_x: -0.18005932867527008
+    boardL_y: -0.6541366577148438
+    boardR_x: -0.10291130840778351
+    boardR_y: 0.533599853515625
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: -0.4029526114463806
+    cube_fy: 1.6706771850585938
+    cube_fz: 0.01572730951011181
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  5:
+    boardL_x: 0.45273780822753906
+    boardL_y: -1.1483535766601562
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 0.32801055908203125
+    cube_fy: 0.46546173095703125
+    cube_fz: 0.6048370599746704
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  6:
+    boardL_x: -0.2669792175292969
+    boardL_y: -0.18012237548828125
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.1439056396484375
+    cube_fy: -0.00801849365234375
+    cube_fz: 0.8845324516296387
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  7:
+    boardL_x: 7.0293426513671875
+    boardL_y: -4.975257873535156
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 5.933174133300781
+    cube_fy: -1.7443618774414062
+    cube_fz: 0.01573142223060131
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  8:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25238800048828125
+    boardR_y: 0.1576995849609375
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.08863067626953125
+    cube_fy: 0.05480194091796875
+    cube_fz: 0.88453209400177
+    first_touch_side: 0
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  9:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: -0.07516860961914062
+    cube_fy: -0.11563491821289062
+    cube_fz: 0.01573220267891884
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: false
+  10:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.20067977905273438
+    cube_fy: -0.00821685791015625
+    cube_fz: 0.8845309019088745
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  11:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.10343170166015625
+    cube_fy: 0.03508758544921875
+    cube_fz: 0.8845318555831909
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  12:
+    boardL_x: -0.250467985868454
+    boardL_y: -0.15545272827148438
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.25635674595832825
+    cube_fy: -0.042041778564453125
+    cube_fz: 0.8845317363739014
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  13:
+    boardL_x: -0.25218772888183594
+    boardL_y: -0.15990066528320312
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.1934833526611328
+    cube_fy: 0.008548736572265625
+    cube_fz: 0.884531557559967
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  14:
+    boardL_x: -0.2611503601074219
+    boardL_y: -0.21302032470703125
+    boardR_x: -0.24978256225585938
+    boardR_y: 0.15499496459960938
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.2990760803222656
+    cube_fy: -0.020244598388671875
+    cube_fz: 0.8845311403274536
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  15:
+    boardL_x: -0.23337554931640625
+    boardL_y: -0.2915916442871094
+    boardR_x: -0.26660919189453125
+    boardR_y: 0.1788177490234375
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: -0.03011322021484375
+    cube_fy: -0.7103843688964844
+    cube_fz: 0.015725819393992424
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  16:
+    boardL_x: -0.27587127685546875
+    boardL_y: -0.19200515747070312
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.28569793701171875
+    cube_fy: -0.10869598388671875
+    cube_fz: 0.893130898475647
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  17:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.22323226928710938
+    cube_fy: -0.08494186401367188
+    cube_fz: 0.8923318386077881
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  18:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.21323394775390625
+    cube_fy: 0.001560211181640625
+    cube_fz: 0.8845321536064148
+    first_touch_side: 0
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  19:
+    boardL_x: -0.2477264404296875
+    boardL_y: -0.18229293823242188
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.23601913452148438
+    cube_fy: -0.067840576171875
+    cube_fz: 0.8850188851356506
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  20:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.21769018471240997
+    cube_fy: -0.0161590576171875
+    cube_fz: 0.8848315477371216
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  21:
+    boardL_x: -0.24724388122558594
+    boardL_y: -0.16124343872070312
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.13411903381347656
+    cube_fy: -0.0251312255859375
+    cube_fz: 0.8845323324203491
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  22:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.20644760131835938
+    cube_fy: 0.006954193115234375
+    cube_fz: 0.8845313191413879
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  23:
+    boardL_x: -0.25
+    boardL_y: -0.154998779296875
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.22504806518554688
+    cube_fy: -0.039379119873046875
+    cube_fz: 0.884557843208313
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  24:
+    boardL_x: -0.25275421142578125
+    boardL_y: -0.16250991821289062
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.249481201171875
+    cube_fy: -0.04016304016113281
+    cube_fz: 0.8845318555831909
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  25:
+    boardL_x: 0.36527252197265625
+    boardL_y: -0.9681606292724609
+    boardR_x: -0.385467529296875
+    boardR_y: 0.1222076416015625
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 29.337820053100586
+    cube_fy: 4.440999984741211
+    cube_fz: -126.8212890625
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  26:
+    boardL_x: -0.23041534423828125
+    boardL_y: -0.21689796447753906
+    boardR_x: 2.1551742553710938
+    boardR_y: 3.3807849884033203
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 2.972827911376953
+    cube_fy: 1.9706649780273438
+    cube_fz: 0.01573217660188675
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  27:
+    boardL_x: -0.25043296813964844
+    boardL_y: -0.15604400634765625
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.1715717315673828
+    cube_fy: -0.012834548950195312
+    cube_fz: 0.8845317363739014
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  28:
+    boardL_x: -0.24766325950622559
+    boardL_y: -0.16237258911132812
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.20340371131896973
+    cube_fy: -0.039764404296875
+    cube_fz: 0.8845293521881104
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  29:
+    boardL_x: -0.25391578674316406
+    boardL_y: -0.16173934936523438
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 0
+    chosen_side_soft: 1
+    cube_fx: -0.20659637451171875
+    cube_fy: -0.008665084838867188
+    cube_fz: 0.8845317363739014
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: true
+  30:
+    boardL_x: -0.2397613525390625
+    boardL_y: -0.1583690643310547
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.23797988891601562
+    cube_fy: -0.07248878479003906
+    cube_fz: 0.8925294876098633
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  31:
+    boardL_x: -0.2614707946777344
+    boardL_y: -0.1606769561767578
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.15366363525390625
+    cube_fy: -0.029809951782226562
+    cube_fz: 0.8845268487930298
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  32:
+    boardL_x: -0.25130462646484375
+    boardL_y: -0.15646924078464508
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 0
+    chosen_side_soft: 0
+    cube_fx: 1.57659912109375
+    cube_fy: -0.3397386074066162
+    cube_fz: 0.01573139987885952
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: false
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  33:
+    boardL_x: -0.25
+    boardL_y: -0.1550000011920929
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.15999221801757812
+    cube_fy: -0.003912926651537418
+    cube_fz: 0.8845272064208984
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  34:
+    boardL_x: -0.25
+    boardL_y: -0.1550000011920929
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.15131759643554688
+    cube_fy: -0.028574224561452866
+    cube_fz: 0.8845324516296387
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  35:
+    boardL_x: -0.2600593566894531
+    boardL_y: -0.1614869236946106
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.2725696563720703
+    cube_fy: -0.10805939882993698
+    cube_fz: 0.8923318982124329
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  36:
+    boardL_x: -0.2500000298023224
+    boardL_y: -0.1550000011920929
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.21623650193214417
+    cube_fy: -0.024399418383836746
+    cube_fz: 0.8853575587272644
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  37:
+    boardL_x: -0.25
+    boardL_y: -0.1550000011920929
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.16699981689453125
+    cube_fy: 0.018771853297948837
+    cube_fz: 0.8845325708389282
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  38:
+    boardL_x: -0.2642860412597656
+    boardL_y: -0.17228172719478607
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.23247528076171875
+    cube_fy: -0.047600194811820984
+    cube_fz: 0.8845318555831909
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  39:
+    boardL_x: -0.25
+    boardL_y: -0.1550000011920929
+    boardR_x: -0.25
+    boardR_y: 0.1550000011920929
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.045345306396484375
+    cube_fy: 0.08385773748159409
+    cube_fz: 0.8845303058624268
+    first_touch_side: 2
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  40:
+    boardL_x: -0.25016021728515625
+    boardL_y: -0.1552276611328125
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.27275848388671875
+    cube_fy: -0.05050086975097656
+    cube_fz: 0.89584881067276
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  41:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.2556343078613281
+    boardR_y: 0.15616226196289062
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.13518142700195312
+    cube_fy: 0.14693069458007812
+    cube_fz: 0.8845319747924805
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  42:
+    boardL_x: -0.24499893188476562
+    boardL_y: -0.2532501220703125
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.10123443603515625
+    cube_fy: -0.17021942138671875
+    cube_fz: 0.8845317363739014
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  43:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.26340293884277344
+    boardR_y: 0.1523571014404297
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.1554584503173828
+    cube_fy: 0.13016700744628906
+    cube_fz: 0.8867001533508301
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  44:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.22612056136131287
+    cube_fy: 0.0010585784912109375
+    cube_fz: 0.8845319151878357
+    first_touch_side: 0
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  45:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 2
+    chosen_side_soft: 2
+    cube_fx: -0.19739532470703125
+    cube_fy: 0.013843536376953125
+    cube_fz: 0.8845283389091492
+    first_touch_side: 2
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  46:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.3213958740234375
+    boardR_y: 0.15484046936035156
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.1364288330078125
+    cube_fy: 0.07183837890625
+    cube_fz: 0.8845323920249939
+    first_touch_side: 2
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  47:
+    boardL_x: -0.25
+    boardL_y: -0.1550006866455078
+    boardR_x: -0.25
+    boardR_y: 0.1550006866455078
+    chosen_side: 1
+    chosen_side_soft: 1
+    cube_fx: -0.23564910888671875
+    cube_fy: -0.0052204132080078125
+    cube_fz: 0.8845322132110596
+    first_touch_side: 1
+    is_answered: true
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: true
+  48:
+    boardL_x: -0.25899505615234375
+    boardL_y: -0.15950775146484375
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.2120361328125
+    cube_fy: 0.000885009765625
+    cube_fz: 0.8845316171646118
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: false
+    success_soft_answer: false
+  49:
+    boardL_x: -0.17300796508789062
+    boardL_y: -0.2592430114746094
+    boardR_x: -0.25
+    boardR_y: 0.154998779296875
+    chosen_side: 0
+    chosen_side_soft: 2
+    cube_fx: -0.22188949584960938
+    cube_fy: -0.035556793212890625
+    cube_fz: 0.8845294117927551
+    first_touch_side: 1
+    is_answered: false
+    is_answered_soft: true
+    is_src_obj_grasped: true
+    success: true
+    success_soft_answer: false
+stats:
+  boardL_x: -0.0746
+  boardL_y: -0.3109
+  boardR_x: -0.204
+  boardR_y: 0.2269
+  chosen_side: 0.82
+  chosen_side_soft: 1.2
+  consecutive_grasp: 0.0
+  cube_fx: 0.6493
+  cube_fy: 0.1231
+  cube_fz: -1.7957
+  elapsed_steps: 90.0
+  first_touch_side: 1.16
+  is_answered: 0.62
+  is_answered_soft: 0.82
+  is_src_obj_grasped: 1.0
+  is_success: 0.42
+  is_success_soft_v1: 0.48
+  pi_0: 0.3279
+  prev_is_grasped: 0.04
+  release_near_target: 0.2
+  release_near_target_only_grasped: 0.2
+  release_recorded: 1.0
+  soft_step: 91.0
+  success: 0.42
+  success_soft_answer: 0.44
+  target_grasped: 0.0
+  target_height: 0.0
+  tcp_closer_to_target_than_wrong: 0.7
+  tcp_closer_to_target_than_wrong_only_grasped: 0.7
+  tcp_correct_side_frac: 0.5701
+  tcp_d0: 0.2163
+  tcp_dwell_target_3s: 0.26
+  tcp_dwell_target_3s_only_grasped: 0.26
+  tcp_dwell_target_consec: 4.86
+  tcp_dwell_target_consec_max: 12.02
+  tcp_dwell_target_steps: 14.44
+  tcp_first_choice_correct: 0.0
+  tcp_first_choice_correct_only_grasped: 0.0
+  tcp_first_enter_target_t: 300000000.0
+  tcp_first_enter_wrong_t: 1.0
+  tcp_min_dist_target_xy: 0.1218
+  tcp_min_dist_wrong_xy: 0.1401
+  tcp_net_progress: 0.0945
+  tcp_prev_dist_target: 0.4139
+  tcp_prev_xy: -0.0837
+  tcp_progress_cnt: 90.0
+  tcp_progress_frac: 0.5949
+  tcp_progress_steps: 53.54
+  tcp_time_correct_side_steps: 51.88
+  tcp_vel_align_cnt: 90.0
+  tcp_vel_align_mean: -0.0029
+  tcp_vel_align_pos_frac: 0.6216
+  tcp_vel_align_pos_steps: 55.94
+  tcp_vel_align_sum: -0.2598
+  wrong_grasp: 0.0

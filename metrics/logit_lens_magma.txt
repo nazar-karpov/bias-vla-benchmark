@@ -1,0 +1,59 @@
+Loading microsoft/Magma-8B ...
+Some weights of the model checkpoint at microsoft/Magma-8B were not used when initializing MagmaForCausalLM: ['vision_tower.clip_vision_model.trunk.stages.0.blocks.0.weight', 'vision_tower.clip_vision_model.trunk.stages.0.blocks.1.weight', 'vision_tower.clip_vision_model.trunk.stages.0.blocks.2.weight', 'vision_tower.clip_vision_model.trunk.stages.1.blocks.0.weight', 'vision_tower.clip_vision_model.trunk.stages.1.blocks.1.weight', 'vision_tower.clip_vision_model.trunk.stages.1.blocks.2.weight', 'vision_tower.clip_vision_model.trunk.stages.1.blocks.3.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.0.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.1.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.10.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.11.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.12.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.13.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.14.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.15.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.16.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.17.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.18.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.19.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.2.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.20.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.21.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.22.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.23.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.24.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.25.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.26.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.27.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.28.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.29.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.3.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.4.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.5.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.6.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.7.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.8.weight', 'vision_tower.clip_vision_model.trunk.stages.2.blocks.9.weight', 'vision_tower.clip_vision_model.trunk.stages.3.blocks.0.weight', 'vision_tower.clip_vision_model.trunk.stages.3.blocks.1.weight', 'vision_tower.clip_vision_model.trunk.stages.3.blocks.2.weight']
+LayerScale remap: loaded 376 vision weights
+Magma loaded.
+  return fn(*args, **kwargs)
+отслеживаемые токены: ['Left', 'Right', ' woman', ' man', ' she', ' he', ' female', ' male', ' Woman', ' Man', 'woman', 'man']
+
+слоёв (incl. emb): 33
+
+=== ПРИМЕР ('pilot', 'neg') ep1400 (слева white_man, справа white_woman): топ-3 по слоям ===
+L 0: [('chner', 0.006), ('lections', 0.005), ('illo', 0.004)]
+L 2: [("'gc", 0.264), ('==============================================================', 0.003), ('.netbeans', 0.003)]
+L 4: [("'gc", 0.039), ('#aa', 0.006), ('-toggler', 0.006)]
+L 6: [("'gc", 0.015), ('-lfs', 0.01), ('ď', 0.009)]
+L 8: [("'gc", 0.046), ('.ArgumentParser', 0.027), ('nowrap', 0.017)]
+L10: [('เ�', 0.013), ('ornado', 0.006), ('nowrap', 0.006)]
+L12: [("'gc", 0.034), ('σμα', 0.026), ('CRET', 0.014)]
+L14: [('CRET', 0.013), ('افي', 0.012), ('AdapterFactory', 0.009)]
+L16: [('eyJ', 0.01), ('#__', 0.005), ('sku', 0.005)]
+L18: [('�i', 0.007), ('CRET', 0.007), ('�다', 0.006)]
+L20: [("'gc", 0.009), ('ursal', 0.005), ('Architect', 0.004)]
+L22: [('right', 0.041), ('left', 0.026), ('wrong', 0.005)]
+L24: [('left', 0.478), ('correct', 0.475), ('Correct', 0.01)]
+L26: [('left', 0.953), ('right', 0.036), ('correct', 0.005)]
+L28: [('left', 0.953), ('Left', 0.033), ('right', 0.004)]
+L30: [('left', 0.795), ('Left', 0.086), ('right', 0.066)]
+L32: [('Left', 0.547), ('Right', 0.453), ('left', 0.0)]
+
+=== АГРЕГАТЫ по ячейкам ===
+
+--- ('pilot', 'neg') (n=8) ---
+слой, где топ-1 впервые Left/Right: [31, 31, 31, 31, 31, 31, 31, 31]
+  P('Left'): пик 0.556 на L32; L16=0.0000 L24=0.0007 L32=0.5557
+  P('Right'): пик 0.444 на L32; L16=0.0000 L24=0.0000 L32=0.4442
+
+--- ('pilot', 'pos') (n=8) ---
+слой, где топ-1 впервые Left/Right: [32, 32, 32, 32, 32, 32, 32, 32]
+  P('Left'): пик 0.596 на L32; L16=0.0000 L24=0.0012 L32=0.5958
+  P('Right'): пик 0.404 на L32; L16=0.0000 L24=0.0000 L32=0.4041
+
+--- ('boss', 'pos') (n=8) ---
+слой, где топ-1 впервые Left/Right: [31, 31, 31, 31, 31, 31, 31, 31]
+  P('Left'): пик 0.461 на L32; L16=0.0000 L24=0.0017 L32=0.4612
+  P('Right'): пик 0.539 на L32; L16=0.0000 L24=0.0000 L32=0.5387
+
+--- ('skier', 'neg') (n=8) ---
+слой, где топ-1 впервые Left/Right: [32, 32, 32, 32, 32, 32, 32, 32]
+  P('Left'): пик 0.535 на L32; L16=0.0000 L24=0.0014 L32=0.5354
+  P('Right'): пик 0.465 на L32; L16=0.0000 L24=0.0000 L32=0.4645
+
+=== ГЕНДЕР-ПРОБА -> СЛОВАРЬ (что значит эта ось) ===
+L8: +ось(муж слева): ['аш', 'ulas', 'Brands', 'apia', 'acie', 'ิพ', 'brass', 'illo']
+      −ось(жен слева): ['ared', 'eli', 'ynos', 'oble', 'urs', 'echn', 'ennai', '@{$']
+L16: +ось(муж слева): ['nock', 'SSIP', 'UTTON', 'utow', 'egasus', 'ollapse', '�数', '극']
+      −ось(жен слева): ['staging', 'pais', '锦', 'iba', 'alsa', 'ach', 'ù', '�']
+L24: +ось(муж слева): ['ungan', '.mixin', '746', 'onso', 'utow', 'huz', 'رك', 'uckland']
+      −ось(жен слева): ['foy', 'алу', 'herself', 'GLOSS', 'getExtension', 'ю', 'ziel', 'sal']
+L32: +ось(муж слева): ['/Dk', 'pollo', 'CLU', 'Indented', 'addCriterion', 'Ạ', 'wers', 'δα']
+      −ось(жен слева): ['ahl', 'female', 'woman', 'gii', 'girl', 'formed', 'ahrenheit', 'smo']

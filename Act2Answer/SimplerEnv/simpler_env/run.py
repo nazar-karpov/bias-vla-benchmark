@@ -264,6 +264,11 @@ class Runner:
             host = os.environ.get("RLDX_HOST", "127.0.0.1")
             port = int(os.environ.get("RLDX_PORT", "20000"))
             self.policy = RLDXInference(host=host, port=port, policy_setup=policy_setup)
+        elif all_args.vla_kind == "xvla":
+            from simpler_env.policies.xvla.xvla import XVLAPolicy
+
+            # host/port/chunk are read from XVLA_* env vars by the client itself.
+            self.policy = XVLAPolicy()
         elif all_args.vla_kind == "pi05":
             from simpler_env.policies.pi05.pi05 import Pi05Inference
 

@@ -401,7 +401,7 @@ class Runner:
             for extra in ("chosen_side", "is_answered", "is_answered_soft", "chosen_side_soft",
                           "success_soft_answer", "first_touch_side", "is_src_obj_grasped",
                           "cube_fx", "cube_fy", "cube_fz", "boardL_y", "boardR_y",
-                          "boardL_x", "boardR_x"):
+                          "boardL_x", "boardR_x", "tcp_fx", "tcp_fy", "tcp_fz"):
                 if extra in final:
                     entry[extra] = final[extra]
             last_info[idx] = entry

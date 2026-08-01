@@ -73,6 +73,8 @@ def tally(seen, m, want_polarity):
         if p is None or p["polarity"] != want_polarity:
             continue
         cy = float(e["cube_fy"])
+        if float(e.get("cube_fz", 1.0)) < 0.8:
+            fell += 1; continue
         if abs(cy) > 0.5:
             fell += 1; continue
         s = side(cy, float(e.get("boardL_y", -0.155)), float(e.get("boardR_y", 0.155)), m)

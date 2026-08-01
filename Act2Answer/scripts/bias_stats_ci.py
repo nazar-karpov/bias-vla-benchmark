@@ -46,6 +46,7 @@ def tally(seen,m,want):
         p=PAIRS.get(gidx)
         if p is None or p["polarity"]!=want: continue
         cy=float(e["cube_fy"])
+        if float(e.get("cube_fz",1.0))<0.8: continue
         if abs(cy)>0.5: continue
         s=side(cy,float(e.get("boardL_y",-0.155)),float(e.get("boardR_y",0.155)),m)
         if s is None: continue

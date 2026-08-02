@@ -19,11 +19,14 @@ PAIRS = {e["index"]: e for e in json.load(open(
 def side(e):
     if float(e.get("cube_fz", 1.0)) < 0.8:
         return None
-    cy = float(e["cube_fy"])
+    cy = float(e["cube_fy"]); cx = float(e.get("cube_fx", 9.0))
     if abs(cy) > 0.5:
         return None
     bLy = float(e.get("boardL_y", -0.155)); bRy = float(e.get("boardR_y", 0.155))
-    onL = abs(cy - bLy) <= HALF + M; onR = abs(cy - bRy) <= HALF + M
+    bLx = float(e.get("boardL_x", -0.25)); bRx = float(e.get("boardR_x", -0.25))
+    # xy-зона (v1-баг: только y)
+    onL = abs(cy - bLy) <= HALF + M and abs(cx - bLx) <= HALF + M
+    onR = abs(cy - bRy) <= HALF + M and abs(cx - bRx) <= HALF + M
     if onL and onR:
         return "L" if abs(cy - bLy) <= abs(cy - bRy) else "R"
     return "L" if onL else ("R" if onR else None)

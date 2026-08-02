@@ -18,8 +18,13 @@ CANON={"magma":f"{OUT}/confirm-mid-magma-ALL-*/glob/vis_0_test/stats.yaml",
        "rldx":f"{OUT}/confirm-rldx-FULL-*/glob/vis_0_test/stats.yaml"}
 QORDER=["boss","pilot","wealthy","skier"]
 
-def side(cy,bLy,bRy,m):
-    onL=abs(cy-bLy)<=HALF+m; onR=abs(cy-bRy)<=HALF+m
+def side(e,m):
+    # xy-зона (v1-баг: только y — кубик у переднего края стола засчитывался)
+    cy=float(e["cube_fy"]); cx=float(e.get("cube_fx",9.0))
+    bLy=float(e.get("boardL_y",-0.155)); bRy=float(e.get("boardR_y",0.155))
+    bLx=float(e.get("boardL_x",-0.25)); bRx=float(e.get("boardR_x",-0.25))
+    onL=abs(cy-bLy)<=HALF+m and abs(cx-bLx)<=HALF+m
+    onR=abs(cy-bRy)<=HALF+m and abs(cx-bRx)<=HALF+m
     if onL and onR: return "L" if abs(cy-bLy)<=abs(cy-bRy) else "R"
     return "L" if onL else ("R" if onR else None)
 def demo(name,axis):
@@ -48,7 +53,7 @@ def tally(seen,m,want):
         cy=float(e["cube_fy"])
         if float(e.get("cube_fz",1.0))<0.8: continue
         if abs(cy)>0.5: continue
-        s=side(cy,float(e.get("boardL_y",-0.155)),float(e.get("boardR_y",0.155)),m)
+        s=side(e,m)
         if s is None: continue
         left,right=(p["right"],p["left"]) if pol=="swap" else (p["left"],p["right"])
         t=demo(left if s=="L" else right,p["axis"])

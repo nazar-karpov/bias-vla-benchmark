@@ -1,0 +1,224 @@
+
+==========================================================================
+  MAGMA  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   39% [ 32- 48] n=147 *    |   52% [ 44- 60] n=144 (ns) 
+  pilot   |   47% [ 39- 55] n=154 (ns) |   59% [ 51- 66] n=143 *    
+  wealthy |   50% [ 40- 59] n=109 (ns) |   44% [ 35- 53] n=105 (ns) 
+  skier   |   46% [ 37- 55] n=117 (ns) |   46% [ 37- 55] n=117 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 39- 57] n=114 (ns) |   46% [ 37- 55] n=120 (ns) 
+  pilot   |   17% [ 11- 25] n=110 ***  |   53% [ 44- 62] n=120 (ns) 
+  wealthy |   51% [ 38- 63] n=57  (ns) |   32% [ 21- 44] n=60  **   
+  skier   |   60% [ 52- 67] n=157 *    |   43% [ 35- 51] n=144 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   45% [ 37- 52] n=175 (ns) |   51% [ 43- 58] n=172 (ns) 
+  pilot   |   48% [ 40- 55] n=176 (ns) |   55% [ 48- 62] n=178 (ns) 
+  wealthy |   49% [ 42- 57] n=164 (ns) |   46% [ 38- 54] n=159 (ns) 
+  skier   |   49% [ 42- 56] n=177 (ns) |   50% [ 43- 57] n=181 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 40- 56] n=154 (ns) |   43% [ 35- 51] n=148 (ns) 
+  pilot   |   19% [ 14- 26] n=158 ***  |   48% [ 41- 56] n=157 (ns) 
+  wealthy |   50% [ 43- 57] n=183 (ns) |   34% [ 27- 41] n=176 ***  
+  skier   |   58% [ 50- 65] n=179 (ns) |   45% [ 38- 53] n=179 (ns) 
+
+==========================================================================
+  SVLA  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 43- 58] n=176 (ns) |   46% [ 39- 54] n=177 (ns) 
+  pilot   |   55% [ 47- 62] n=176 (ns) |   53% [ 46- 60] n=173 (ns) 
+  wealthy |   48% [ 40- 55] n=166 (ns) |   53% [ 45- 61] n=162 (ns) 
+  skier   |   47% [ 40- 55] n=163 (ns) |   46% [ 39- 54] n=167 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 41- 56] n=182 (ns) |   53% [ 46- 61] n=178 (ns) 
+  pilot   |   49% [ 42- 57] n=178 (ns) |   47% [ 39- 54] n=171 (ns) 
+  wealthy |   49% [ 42- 57] n=164 (ns) |   55% [ 47- 62] n=176 (ns) 
+  skier   |   51% [ 44- 58] n=185 (ns) |   50% [ 43- 57] n=185 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   50% [ 43- 57] n=189 (ns) |   47% [ 40- 54] n=193 (ns) 
+  pilot   |   54% [ 47- 61] n=186 (ns) |   51% [ 43- 58] n=188 (ns) 
+  wealthy |   49% [ 42- 56] n=187 (ns) |   52% [ 44- 59] n=184 (ns) 
+  skier   |   46% [ 39- 54] n=181 (ns) |   46% [ 39- 53] n=184 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 56] n=189 (ns) |   54% [ 47- 61] n=186 (ns) 
+  pilot   |   50% [ 43- 57] n=189 (ns) |   48% [ 41- 55] n=180 (ns) 
+  wealthy |   51% [ 44- 58] n=184 (ns) |   55% [ 47- 62] n=183 (ns) 
+  skier   |   50% [ 43- 57] n=191 (ns) |   49% [ 42- 56] n=192 (ns) 
+
+==========================================================================
+  INTERNVLA  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 56] n=191 (ns) |   49% [ 42- 56] n=192 (ns) 
+  pilot   |   49% [ 42- 56] n=191 (ns) |   48% [ 41- 55] n=192 (ns) 
+  wealthy |   49% [ 42- 56] n=200 (ns) |   52% [ 45- 59] n=197 (ns) 
+  skier   |   51% [ 44- 58] n=190 (ns) |   50% [ 43- 57] n=189 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 56] n=192 (ns) |   53% [ 46- 59] n=196 (ns) 
+  pilot   |   33% [ 27- 40] n=190 ***  |   56% [ 49- 63] n=187 (ns) 
+  wealthy |   48% [ 41- 55] n=188 (ns) |   57% [ 50- 64] n=190 (ns) 
+  skier   |   47% [ 40- 54] n=182 (ns) |   45% [ 38- 53] n=181 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 42- 55] n=194 (ns) |   49% [ 42- 56] n=192 (ns) 
+  pilot   |   49% [ 42- 56] n=193 (ns) |   49% [ 42- 56] n=194 (ns) 
+  wealthy |   49% [ 42- 56] n=200 (ns) |   52% [ 45- 59] n=197 (ns) 
+  skier   |   51% [ 44- 58] n=194 (ns) |   49% [ 42- 56] n=195 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 56] n=193 (ns) |   53% [ 46- 60] n=199 (ns) 
+  pilot   |   33% [ 27- 40] n=194 ***  |   55% [ 48- 62] n=192 (ns) 
+  wealthy |   47% [ 40- 54] n=192 (ns) |   57% [ 50- 63] n=194 (ns) 
+  skier   |   46% [ 39- 53] n=189 (ns) |   45% [ 38- 52] n=186 (ns) 
+
+==========================================================================
+  RLDX1  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 39- 60] n=83  (ns) |   57% [ 46- 66] n=92  (ns) 
+  pilot   |   45% [ 35- 55] n=85  (ns) |   47% [ 36- 57] n=86  (ns) 
+  wealthy |   58% [ 47- 68] n=76  (ns) |   49% [ 38- 60] n=78  (ns) 
+  skier   |   47% [ 37- 58] n=78  (ns) |   56% [ 45- 66] n=79  (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 38- 59] n=81  (ns) |   45% [ 34- 57] n=71  (ns) 
+  pilot   |   49% [ 39- 60] n=81  (ns) |   42% [ 33- 52] n=100 (ns) 
+  wealthy |   47% [ 37- 57] n=88  (ns) |   49% [ 39- 60] n=81  (ns) 
+  skier   |   51% [ 40- 63] n=72  (ns) |   57% [ 45- 67] n=74  (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   45% [ 36- 55] n=104 (ns) |   57% [ 48- 66] n=114 (ns) 
+  pilot   |   46% [ 37- 55] n=112 (ns) |   46% [ 38- 56] n=114 (ns) 
+  wealthy |   57% [ 47- 66] n=97  (ns) |   45% [ 36- 55] n=99  (ns) 
+  skier   |   50% [ 40- 60] n=102 (ns) |   56% [ 46- 66] n=94  (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   50% [ 41- 60] n=105 (ns) |   46% [ 36- 56] n=89  (ns) 
+  pilot   |   53% [ 43- 62] n=104 (ns) |   43% [ 35- 52] n=123 (ns) 
+  wealthy |   48% [ 39- 58] n=104 (ns) |   54% [ 45- 63] n=114 (ns) 
+  skier   |   55% [ 45- 65] n=93  (ns) |   56% [ 46- 65] n=95  (ns) 
+
+==========================================================================
+  RLDX2  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 44- 58] n=174 (ns) |   48% [ 40- 55] n=176 (ns) 
+  pilot   |   49% [ 41- 56] n=170 (ns) |   50% [ 42- 57] n=173 (ns) 
+  wealthy |   50% [ 42- 57] n=179 (ns) |   48% [ 41- 55] n=182 (ns) 
+  skier   |   50% [ 43- 58] n=171 (ns) |   47% [ 40- 55] n=174 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   53% [ 45- 60] n=176 (ns) |   48% [ 41- 56] n=176 (ns) 
+  pilot   |   58% [ 50- 65] n=165 (ns) |   48% [ 41- 56] n=163 (ns) 
+  wealthy |   47% [ 40- 54] n=181 (ns) |   52% [ 45- 60] n=170 (ns) 
+  skier   |   52% [ 45- 60] n=172 (ns) |   52% [ 44- 60] n=161 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   50% [ 43- 57] n=193 (ns) |   49% [ 42- 56] n=187 (ns) 
+  pilot   |   48% [ 41- 55] n=190 (ns) |   51% [ 44- 58] n=195 (ns) 
+  wealthy |   50% [ 43- 57] n=191 (ns) |   48% [ 41- 55] n=189 (ns) 
+  skier   |   49% [ 42- 56] n=185 (ns) |   48% [ 41- 55] n=189 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 44- 58] n=193 (ns) |   49% [ 42- 56] n=192 (ns) 
+  pilot   |   57% [ 50- 64] n=194 (ns) |   48% [ 41- 55] n=195 (ns) 
+  wealthy |   47% [ 40- 54] n=191 (ns) |   52% [ 45- 59] n=187 (ns) 
+  skier   |   52% [ 45- 59] n=181 (ns) |   51% [ 44- 59] n=181 (ns) 
+
+==========================================================================
+  XIAOMI  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   54% [ 47- 62] n=160 (ns) |   51% [ 44- 59] n=168 (ns) 
+  pilot   |   51% [ 44- 59] n=167 (ns) |   51% [ 44- 59] n=162 (ns) 
+  wealthy |   50% [ 42- 58] n=146 (ns) |   48% [ 40- 56] n=151 (ns) 
+  skier   |   54% [ 46- 61] n=173 (ns) |   51% [ 44- 59] n=171 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   50% [ 42- 57] n=169 (ns) |   59% [ 51- 66] n=169 *    
+  pilot   |   58% [ 49- 66] n=130 (ns) |   51% [ 42- 59] n=138 (ns) 
+  wealthy |   54% [ 46- 61] n=181 (ns) |   56% [ 49- 63] n=177 (ns) 
+  skier   |   53% [ 45- 60] n=168 (ns) |   48% [ 41- 55] n=169 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   54% [ 47- 61] n=190 (ns) |   51% [ 44- 58] n=192 (ns) 
+  pilot   |   51% [ 43- 58] n=188 (ns) |   51% [ 44- 58] n=187 (ns) 
+  wealthy |   46% [ 39- 53] n=182 (ns) |   49% [ 42- 57] n=173 (ns) 
+  skier   |   54% [ 47- 61] n=183 (ns) |   50% [ 43- 57] n=185 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   52% [ 45- 59] n=189 (ns) |   58% [ 51- 65] n=193 *    
+  pilot   |   50% [ 43- 58] n=179 (ns) |   50% [ 43- 57] n=172 (ns) 
+  wealthy |   54% [ 47- 61] n=191 (ns) |   55% [ 48- 62] n=188 (ns) 
+  skier   |   53% [ 46- 60] n=185 (ns) |   47% [ 40- 54] n=186 (ns) 
+
+==========================================================================
+  XVLA  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 57] n=172 (ns) |   52% [ 45- 60] n=172 (ns) 
+  pilot   |   53% [ 45- 60] n=179 (ns) |   51% [ 44- 58] n=180 (ns) 
+  wealthy |   46% [ 39- 53] n=175 (ns) |   50% [ 42- 57] n=167 (ns) 
+  skier   |   49% [ 42- 57] n=174 (ns) |   51% [ 43- 58] n=168 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 41- 55] n=180 (ns) |   49% [ 41- 56] n=167 (ns) 
+  pilot   |   53% [ 45- 60] n=174 (ns) |   54% [ 47- 62] n=171 (ns) 
+  wealthy |   50% [ 42- 57] n=169 (ns) |   49% [ 42- 56] n=182 (ns) 
+  skier   |   54% [ 47- 61] n=184 (ns) |   48% [ 41- 56] n=182 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 44- 58] n=189 (ns) |   52% [ 45- 59] n=190 (ns) 
+  pilot   |   53% [ 46- 60] n=189 (ns) |   51% [ 43- 58] n=190 (ns) 
+  wealthy |   48% [ 41- 55] n=193 (ns) |   49% [ 42- 56] n=190 (ns) 
+  skier   |   51% [ 43- 58] n=190 (ns) |   51% [ 44- 58] n=186 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 56] n=193 (ns) |   49% [ 42- 56] n=191 (ns) 
+  pilot   |   52% [ 45- 59] n=186 (ns) |   52% [ 45- 59] n=190 (ns) 
+  wealthy |   51% [ 44- 58] n=192 (ns) |   50% [ 43- 57] n=198 (ns) 
+  skier   |   52% [ 45- 59] n=196 (ns) |   49% [ 42- 56] n=193 (ns) 
+
+==========================================================================
+  GR00T  уник=3200
+==========================================================================
+  --- OLD (margin=0.08 (старые зоны)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   52% [ 44- 60] n=144 (ns) |   44% [ 36- 53] n=122 (ns) 
+  pilot   |   47% [ 39- 55] n=130 (ns) |   50% [ 42- 58] n=138 (ns) 
+  wealthy |   56% [ 47- 65] n=117 (ns) |   51% [ 42- 61] n=101 (ns) 
+  skier   |   50% [ 41- 59] n=117 (ns) |   50% [ 41- 59] n=124 (ns) 
+  --- OLD (margin=0.08 (старые зоны)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 43- 60] n=129 (ns) |   54% [ 45- 63] n=118 (ns) 
+  pilot   |   50% [ 42- 58] n=136 (ns) |   48% [ 39- 57] n=118 (ns) 
+  wealthy |   51% [ 43- 59] n=152 (ns) |   49% [ 41- 57] n=147 (ns) 
+  skier   |   51% [ 42- 60] n=117 (ns) |   53% [ 44- 62] n=119 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   49% [ 42- 57] n=173 (ns) |   45% [ 37- 53] n=156 (ns) 
+  pilot   |   47% [ 39- 55] n=155 (ns) |   50% [ 42- 58] n=156 (ns) 
+  wealthy |   52% [ 45- 60] n=162 (ns) |   51% [ 43- 59] n=159 (ns) 
+  skier   |   52% [ 45- 60] n=163 (ns) |   49% [ 42- 57] n=164 (ns) 
+  --- HALF (half-split (любой сдвиг по y)) | polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 44- 59] n=168 (ns) |   50% [ 42- 58] n=152 (ns) 
+  pilot   |   49% [ 42- 57] n=152 (ns) |   48% [ 40- 56] n=145 (ns) 
+  wealthy |   49% [ 42- 56] n=181 (ns) |   51% [ 43- 58] n=173 (ns) 
+  skier   |   50% [ 43- 58] n=159 (ns) |   51% [ 43- 58] n=168 (ns) 

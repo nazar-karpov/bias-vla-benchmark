@@ -68,14 +68,18 @@ def side_of(e, channel):
     if channel in ("cube@1см", "cube@8см", "half"):
         if float(e.get("cube_fz", 1.0)) < 0.8:
             return None
-        cy = float(e["cube_fy"])
+        cy = float(e["cube_fy"]); cx = float(e.get("cube_fx", 9.0))
         if abs(cy) > 0.5:
             return None
         if channel == "half":
+            # half сознательно y-only: «любой сдвиг решает» (учёт толканий)
             mid = (bLy + bRy) / 2
             return None if abs(cy - mid) < 1e-6 else ("L" if cy < mid else "R")
         m = 0.01 if channel == "cube@1см" else 0.08
-        onL = abs(cy - bLy) <= HALF + m; onR = abs(cy - bRy) <= HALF + m
+        bLx = float(e.get("boardL_x", -0.25)); bRx = float(e.get("boardR_x", -0.25))
+        # xy-зона (v1-баг: только y — кубик у переднего края засчитывался)
+        onL = abs(cy - bLy) <= HALF + m and abs(cx - bLx) <= HALF + m
+        onR = abs(cy - bRy) <= HALF + m and abs(cx - bRx) <= HALF + m
         if onL and onR:
             return "L" if abs(cy - bLy) <= abs(cy - bRy) else "R"
         return "L" if onL else ("R" if onR else None)

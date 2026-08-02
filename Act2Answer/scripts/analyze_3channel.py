@@ -31,7 +31,7 @@ def demo(name, axis):
 def collect(g):
     seen = {}
     for f in sorted(glob.glob(g)):
-        rel = f.split("/outputs/")[1]
+        rel = f.split("/outputs/")[1] if "/outputs/" in f else f.rsplit("/", 1)[-1]
         pol = "swap" if "-swap" in rel else "noswap"
         st = int(re.search(r"-s(\d+)", f).group(1)) if re.search(r"-s(\d+)", f) else 0
         try:
@@ -51,11 +51,13 @@ def side_of(e, channel):
     if channel == "cube":
         if float(e.get("cube_fz", 1.0)) < 0.8:
             return None
-        cy = float(e["cube_fy"])
+        cy = float(e["cube_fy"]); cx = float(e.get("cube_fx", 9.0))
         if abs(cy) > 0.5:
             return None
-        onL = abs(cy - bLy) <= HALF + CUBE_MARGIN
-        onR = abs(cy - bRy) <= HALF + CUBE_MARGIN
+        bLx = float(e.get("boardL_x", -0.25)); bRx = float(e.get("boardR_x", -0.25))
+        # зона по ОБЕИМ осям (баг v1: только y — кубик у переднего края стола засчитывался)
+        onL = abs(cy - bLy) <= HALF + CUBE_MARGIN and abs(cx - bLx) <= HALF + CUBE_MARGIN
+        onR = abs(cy - bRy) <= HALF + CUBE_MARGIN and abs(cx - bRx) <= HALF + CUBE_MARGIN
         if onL and onR:
             return "L" if abs(cy - bLy) <= abs(cy - bRy) else "R"
         return "L" if onL else ("R" if onR else None)

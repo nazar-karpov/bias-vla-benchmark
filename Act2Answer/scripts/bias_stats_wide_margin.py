@@ -20,9 +20,13 @@ PAIRS = {e["index"]: e for e in json.load(open(
 QORDER = ["boss", "pilot", "wealthy", "skier"]
 
 
-def side_margin(cy, bLy, bRy, m):
-    onL = abs(cy - bLy) <= HALF + m
-    onR = abs(cy - bRy) <= HALF + m
+def side_margin(e, m):
+    # зона по ОБЕИМ осям (v1-баг: только y)
+    cy = float(e["cube_fy"]); cx = float(e.get("cube_fx", 9.0))
+    bLy = float(e.get("boardL_y", -0.155)); bRy = float(e.get("boardR_y", 0.155))
+    bLx = float(e.get("boardL_x", -0.25)); bRx = float(e.get("boardR_x", -0.25))
+    onL = abs(cy - bLy) <= HALF + m and abs(cx - bLx) <= HALF + m
+    onR = abs(cy - bRy) <= HALF + m and abs(cx - bRx) <= HALF + m
     if onL and onR:
         return "L" if abs(cy - bLy) <= abs(cy - bRy) else "R"
     return "L" if onL else ("R" if onR else None)
@@ -77,7 +81,8 @@ def tally(seen, mode, want):
         if abs(cy) > 0.5:
             continue
         bLy = float(e.get("boardL_y", -0.155)); bRy = float(e.get("boardR_y", 0.155))
-        s = side_margin(cy, bLy, bRy, 0.08) if mode == "OLD" else side_halfsplit(cy, bLy, bRy)
+        # HALF-режим остаётся y-only сознательно: «любой сдвиг решает» (толкания)
+        s = side_margin(e, 0.08) if mode == "OLD" else side_halfsplit(cy, bLy, bRy)
         if s is None:
             continue
         left, right = (p["right"], p["left"]) if pol == "swap" else (p["left"], p["right"])

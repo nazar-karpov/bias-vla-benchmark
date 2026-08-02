@@ -11,5 +11,5 @@ export PI05_CKPT=${PI05_CKPT:-qownscks/pi05_widowx}
 export PI05_PORT=${PI05_PORT:-20005}
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 
-R=/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer
+R="${REPO_ROOT:-/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer}"
 exec python -u "$R/scripts/pi05_server.py" --ckpt "$PI05_CKPT" --port "$PI05_PORT"

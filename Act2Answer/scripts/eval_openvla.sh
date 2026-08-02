@@ -26,6 +26,6 @@ for swap_arg in noswap swap; do
     python3 -u -m simpler_env.eval \
       --vla openvla --start-id "$START_ID" --count "$COUNT" --assets "$ASSETS" \
       --obj-set "${OBJ_SET:-test}" --buffer-inferbatch "$BUFFER_INFERBATCH" \
-      --vla-path "$VLA_PATH" --vla-unnorm-key "$UNNORM" "${extra[@]}"
+      --vla-path "$VLA_PATH" --vla-unnorm-key "$UNNORM" ${SHARD_SIZE:+--shard-size $SHARD_SIZE} "${extra[@]}"
 done
 echo "DONE_OPENVLA_EVAL $(date -u)"

@@ -5,10 +5,12 @@
 set -euo pipefail
 CKPT="${1:?usage: internvla_server.sh <ckpt.pt> <port>}"
 PORT="${2:-10093}"
-REPO="$HOME/bias_benchmark/nazar_folder/InternVLA-M1"
+REPO="${INTERNVLA_REPO:-$HOME/bias_benchmark/nazar_folder/InternVLA-M1}"
 
-source "$HOME/bias_benchmark/miniconda3/etc/profile.d/conda.sh"
-conda activate "$HOME/bias_benchmark/miniconda3/envs/internvla"
+CONDA_ROOT="${CONDA_ROOT:-$HOME/bias_benchmark/miniconda3}"
+CONDA_ENVS_DIR="${CONDA_ENVS_DIR:-$CONDA_ROOT/envs}"
+source "$CONDA_ROOT/etc/profile.d/conda.sh"
+conda activate "$CONDA_ENVS_DIR/internvla"
 export PYTHONPATH="$REPO:${PYTHONPATH:-}"
 export TOKENIZERS_PARALLELISM=false
 cd "$REPO"

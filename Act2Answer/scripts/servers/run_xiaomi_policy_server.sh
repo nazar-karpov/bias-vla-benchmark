@@ -12,7 +12,7 @@ GPU=${GPU:-0}
 exec > >(tee -a "$LOG") 2>&1
 
 echo "START_XIAOMI_POLICY_SERVER $(date)"
-source /opt/conda/etc/profile.d/conda.sh
+source "${CONDA_ROOT:-/opt/conda}/etc/profile.d/conda.sh"
 conda activate "$ENV_PATH"
 export PYTHONNOUSERSITE=1
 export TOKENIZERS_PARALLELISM=false

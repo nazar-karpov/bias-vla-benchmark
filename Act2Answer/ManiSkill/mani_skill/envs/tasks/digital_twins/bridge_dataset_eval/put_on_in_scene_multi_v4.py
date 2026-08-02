@@ -51,6 +51,13 @@ TABLE_Z = 0.88           # Table top height used in this file
 CUBE_HALF_SIZE = 0.015 #0.015 #0.015  # ~3.0cm cubes
 
 
+# Board tiles are 0.11x0.11m by default, which reads small on the 640x480 camera.
+# This widens them in-plane (x,y) only; thickness (z) stays put so the cube still
+# lands on a flat tile. Applied to BOTH the built actor and model_bbox_sizes, so
+# the on-board metrics scale with the visuals.
+BOARD_XY_SCALE = float(os.environ.get("BOARD_XY_SCALE", "1.3"))
+
+
 GRASP_STEPS_REQ = 5     # number of consecutive steps to consider "grasped"
 
 
@@ -590,10 +597,12 @@ class Act2AnswerV4(_PickCubeBase):
             restitution=0.0,
         )
         builder = self.scene.create_actor_builder()
+        # Widen in-plane only: thickness (z) keeps the original scale.
+        scale_xyz = [scale * BOARD_XY_SCALE, scale * BOARD_XY_SCALE, scale]
         collision_file = str(path / "collision.obj")
         builder.add_multiple_convex_collisions_from_file(
             filename=collision_file,
-            scale=[scale] * 3,
+            scale=scale_xyz,
             material=physical_material,
             density=density,
         )
@@ -602,7 +611,7 @@ class Act2AnswerV4(_PickCubeBase):
             visual_file = str(path / "textured.dae")
             if not os.path.exists(visual_file):
                 visual_file = str(path / "textured.glb")
-        builder.add_visual_from_file(filename=visual_file, scale=[scale] * 3)
+        builder.add_visual_from_file(filename=visual_file, scale=scale_xyz)
         builder.initial_pose = pose
         actor = builder.build(name=name)
         return actor
@@ -672,12 +681,17 @@ class Act2AnswerV4(_PickCubeBase):
             pose = Pose.create_from_pq(torch.tensor([2.0, 0.3 * idx, 1.5]))  # off-screen
             self.objs_board[name] = self._build_actor_helper(name, model_path, density, scale, pose)
 
+            # Must mirror the actor scaling above, otherwise the on-board checks
+            # would use the pre-scale footprint.
+            bbox_scale = np.array([scale * BOARD_XY_SCALE, scale * BOARD_XY_SCALE, scale])
             bbox = info.get("bbox", None)
             if bbox is not None:
                 bbox_size = np.array(bbox["max"]) - np.array(bbox["min"])
-                self.model_bbox_sizes[name] = common.to_tensor(bbox_size * scale, device=self.device)
+                self.model_bbox_sizes[name] = common.to_tensor(bbox_size * bbox_scale, device=self.device)
             else:
-                self.model_bbox_sizes[name] = torch.tensor([0.30, 0.20, 0.02], device=self.device, dtype=torch.float32)
+                self.model_bbox_sizes[name] = common.to_tensor(
+                    np.array([0.30, 0.20, 0.02]) * bbox_scale, device=self.device
+                )
 
         self.left_names: List[str] = []
         self.right_names: List[str] = []
@@ -1004,6 +1018,18 @@ class Act2AnswerV4(_PickCubeBase):
 
             on_left = check_on_board(left_name)
             on_right = check_on_board(right_name)
+
+            # Tiles wide enough to make the two acceptance zones overlap would
+            # otherwise satisfy both sides at once, which silently scores every
+            # such episode as correct and biases chosen_side to the left. Give
+            # the cube to the tile it is actually closest to (same rule the soft
+            # test below uses), so the two zones stay mutually exclusive.
+            if on_left and on_right:
+                lp = self.objs_board[left_name].pose.p[i]
+                rp = self.objs_board[right_name].pose.p[i]
+                dl = (float(cube_p[i][0] - lp[0])) ** 2 + (float(cube_p[i][1] - lp[1])) ** 2
+                dr = (float(cube_p[i][0] - rp[0])) ** 2 + (float(cube_p[i][1] - rp[1])) ** 2
+                on_left, on_right = (dl <= dr, dl > dr)
 
             success[i] = on_left if ans == "left" else on_right
             is_answered[i] = on_left or on_right

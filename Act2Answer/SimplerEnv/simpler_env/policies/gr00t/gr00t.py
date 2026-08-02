@@ -13,6 +13,7 @@ import cv2
 import msgpack
 import msgpack_numpy as mnp
 import numpy as np
+import torch
 import zmq
 from transforms3d import euler as te
 from transforms3d import quaternions as tq
@@ -46,7 +47,7 @@ class GR00TPolicy:
         self.sock.connect(f"tcp://{self.host}:{self.port}")
 
     def _call(self, obs_payload):
-        req = {"endpoint": "get_action", "data": obs_payload}
+        req = {"endpoint": "get_action", "data": {"observation": obs_payload}}
         self.sock.send(_pack(req))
         msg = self.sock.recv()
         if msg == b"ERROR":
@@ -74,22 +75,27 @@ class GR00TPolicy:
         eef = eef.cpu().numpy() if hasattr(eef, "cpu") else np.asarray(eef)
         rm = tq.quat2mat(eef[3:7])
         rpy = te.mat2euler(rm @ _DEFAULT_ROT.T)
+        def _st(v):  # (B=1, T=1, D=1) float32 — формат Gr00tSimPolicyWrapper
+            return np.asarray([[[float(v)]]], dtype=np.float32)
+
         return {
-            "video.image_0": img,
-            "state.x": [float(eef[0])],
-            "state.y": [float(eef[1])],
-            "state.z": [float(eef[2])],
-            "state.roll": [float(rpy[0])],
-            "state.pitch": [float(rpy[1])],
-            "state.yaw": [float(rpy[2])],
-            "state.pad": [0.0],
-            "state.gripper": [float(eef[7])],
-            "annotation.human.action.task_description": str(instruction),
+            "video.image_0": img[None, None],  # (1, 1, H, W, 3) uint8
+            "state.x": _st(eef[0]),
+            "state.y": _st(eef[1]),
+            "state.z": _st(eef[2]),
+            "state.roll": _st(rpy[0]),
+            "state.pitch": _st(rpy[1]),
+            "state.yaw": _st(rpy[2]),
+            "state.pad": _st(0.0),
+            "state.gripper": _st(eef[7]),
+            "annotation.human.action.task_description": [str(instruction)],
         }
 
     def _compute_plan(self, images, task_descriptions, proprio):
         for i, (image, instruction, pr) in enumerate(zip(images, task_descriptions, proprio)):
             resp = self._call(self._build_payload(image, instruction, pr))
+            if isinstance(resp, (list, tuple)):
+                resp = resp[0]                      # (action, info) -> action
             cols = [np.asarray(resp[k]).reshape(-1) for k in (
                 "action.x", "action.y", "action.z",
                 "action.roll", "action.pitch", "action.yaw", "action.gripper")]
@@ -107,12 +113,9 @@ class GR00TPolicy:
         actions = []
         for i in range(len(images)):
             a = self.action_plans[i].popleft()
+            # как в их WidowXBridgeEnv.step: xyz + roll/pitch/yaw НАПРЯМУЮ (без
+            # euler2axangle) + грипер 2*(g>0.5)-1
             actions.append(
-                {
-                    "world_vector": np.asarray(a[0:3], dtype=np.float64),
-                    "rot_axangle": np.asarray(a[3:6], dtype=np.float64),
-                    "gripper": np.asarray([2.0 * (float(a[6]) > 0.5) - 1.0]),
-                    "terminate_episode": np.array([0.0]),
-                }
+                np.concatenate([a[0:3], a[3:6], [2.0 * (float(a[6]) > 0.5) - 1.0]])
             )
-        return None, actions
+        return torch.tensor(np.stack(actions), dtype=torch.float32)

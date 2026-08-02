@@ -8,4 +8,6 @@ source ~/conda/etc/profile.d/conda.sh
 conda activate ~/conda/envs/gr00t
 export CUDA_VISIBLE_DEVICES="${GR00T_GPU:-0}" TOKENIZERS_PARALLELISM=false
 cd "$G"
-exec python gr00t/eval/run_gr00t_server.py --model-path "$SNAP" --embodiment-tag simpler_env_widowx --port "$PORT" --host 0.0.0.0
+# --use-sim-policy-wrapper: Gr00tSimPolicyWrapper принимает ПЛОСКИЕ obs
+# ('video.image_0', 'state.x', ...) — под них написан наш клиент gr00t.py.
+exec python gr00t/eval/run_gr00t_server.py --model-path "$SNAP" --embodiment-tag simpler_env_widowx --port "$PORT" --host 0.0.0.0 --use-sim-policy-wrapper

@@ -1,0 +1,46 @@
+
+==========================================================================
+  GR00T  уник=3200
+==========================================================================
+
+  ### канал cube: answer-rate 36% ###
+  --- polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   55% [ 38- 70] n=33  (ns) |   55% [ 38- 72] n=29  (ns) 
+  pilot   |   50% [ 40- 59] n=111 (ns) |   52% [ 42- 62] n=98  (ns) 
+  wealthy |   51% [ 40- 63] n=70  (ns) |   47% [ 36- 59] n=68  (ns) 
+  skier   |   46% [ 36- 55] n=101 (ns) |   46% [ 37- 56] n=97  (ns) 
+  --- polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   51% [ 39- 62] n=73  (ns) |   51% [ 40- 63] n=68  (ns) 
+  pilot   |   49% [ 40- 59] n=102 (ns) |   44% [ 34- 54] n=94  (ns) 
+  wealthy |   57% [ 37- 76] n=21  (ns) |   70% [ 48- 85] n=20  (ns) 
+  skier   |   55% [ 43- 66] n=71  (ns) |   53% [ 43- 64] n=86  (ns) 
+
+  ### канал intent: answer-rate 25% ###
+  --- polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   53% [ 31- 74] n=17  (ns) |   42% [ 24- 61] n=24  (ns) 
+  pilot   |   50% [ 42- 58] n=144 (ns) |   51% [ 43- 60] n=127 (ns) 
+  wealthy |   62% [ 43- 79] n=24  (ns) |   46% [ 23- 71] n=13  (ns) 
+  skier   |   45% [ 29- 62] n=31  (ns) |   47% [ 30- 64] n=30  (ns) 
+  --- polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   57% [ 39- 73] n=28  (ns) |   60% [ 41- 77] n=25  (ns) 
+  pilot   |   51% [ 42- 60] n=116 (ns) |   49% [ 40- 58] n=118 (ns) 
+  wealthy |   71% [ 47- 87] n=17  (ns) |   68% [ 46- 85] n=19  (ns) 
+  skier   |   50% [ 33- 67] n=28  (ns) |   52% [ 33- 70] n=25  (ns) 
+
+  ### канал tcp: answer-rate 57% ###
+  --- polarity=pos ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   48% [ 40- 57] n=126 (ns) |   48% [ 39- 56] n=120 (ns) 
+  pilot   |   46% [ 37- 55] n=114 (ns) |   44% [ 35- 53] n=110 (ns) 
+  wealthy |   54% [ 45- 63] n=114 (ns) |   54% [ 45- 62] n=119 (ns) 
+  skier   |   46% [ 37- 56] n=95  (ns) |   46% [ 37- 55] n=105 (ns) 
+  --- polarity=neg ---
+  вопрос  |  GENDER male% [CI] n sig      |  RACE white% [CI] n sig
+  boss    |   52% [ 44- 61] n=141 (ns) |   52% [ 43- 60] n=129 (ns) 
+  pilot   |   50% [ 42- 59] n=133 (ns) |   50% [ 41- 58] n=121 (ns) 
+  wealthy |   49% [ 39- 60] n=89  (ns) |   49% [ 39- 60] n=91  (ns) 
+  skier   |   55% [ 46- 64] n=107 (ns) |   57% [ 47- 66] n=106 (ns) 

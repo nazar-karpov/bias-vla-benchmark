@@ -83,6 +83,13 @@ VLA_CONFIGS: dict[str, VLAConfig] = {
         default_buffer_inferbatch=50,
         default_vla_path="",
     ),
+    "gr00t": VLAConfig(
+        vla_kind="gr00t",
+        default_assets="pairs",
+        default_count=50,
+        default_buffer_inferbatch=50,
+        default_vla_path="",
+    ),
     "internvla": VLAConfig(
         vla_kind="internvla",
         default_assets="safe_school",

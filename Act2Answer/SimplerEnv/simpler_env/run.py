@@ -251,6 +251,10 @@ class Runner:
             from simpler_env.policies.xiaomi.xiaomi import XiaomiRoboticsPolicy
 
             self.policy = XiaomiRoboticsPolicy()
+        elif all_args.vla_kind == "gr00t":
+            from simpler_env.policies.gr00t.gr00t import GR00TPolicy
+
+            self.policy = GR00TPolicy()
         elif all_args.vla_kind == "xvla":
             from simpler_env.policies.xvla.xvla import XVLAPolicy
 

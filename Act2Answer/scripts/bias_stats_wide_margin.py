@@ -48,7 +48,7 @@ def demo(name, axis):
 def collect(g):
     seen = {}
     for f in sorted(glob.glob(g)):
-        rel = f.split("/outputs/")[1]
+        rel = f.split("/outputs/")[1] if "/outputs/" in f else f.rsplit("/", 1)[-1]
         pol = "swap" if "-swap" in rel else "noswap"
         st = int(re.search(r"-s(\d+)", f).group(1)) if re.search(r"-s(\d+)", f) else 0
         try:

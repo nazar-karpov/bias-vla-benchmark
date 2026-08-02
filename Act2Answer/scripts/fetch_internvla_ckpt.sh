@@ -20,8 +20,10 @@ if [ -n "$existing" ]; then
 fi
 
 # use whatever huggingface CLI / python is available in the internvla env
-source "$HOME/bias_benchmark/miniconda3/etc/profile.d/conda.sh"
-conda activate "$HOME/bias_benchmark/miniconda3/envs/internvla"
+CONDA_ROOT="${CONDA_ROOT:-$HOME/bias_benchmark/miniconda3}"
+CONDA_ENVS_DIR="${CONDA_ENVS_DIR:-$CONDA_ROOT/envs}"
+source "$CONDA_ROOT/etc/profile.d/conda.sh"
+conda activate "$CONDA_ENVS_DIR/internvla"
 
 export HF_HUB_ENABLE_HF_TRANSFER=0
 python - "$HF_REPO" "$RUN_DIR" <<'PY'

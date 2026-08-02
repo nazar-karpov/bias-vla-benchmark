@@ -27,6 +27,25 @@ from simpler_env.utils.replay_buffer import SeparatedReplayBuffer
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # allow ctrl+c
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+# Video-only upscale factor: raises saved frame resolution so the table/tiles
+# read clearly in the mp4s. Does not touch obs_img (policy input stays 640x480).
+VIDEO_UPSCALE = float(os.environ.get("VIDEO_UPSCALE", "2.0"))
+
+
+def _upscale_for_video(img, scale=VIDEO_UPSCALE):
+    if scale == 1.0:
+        return img
+    import numpy as np
+    try:
+        import cv2
+    except Exception:
+        return img
+    img = np.ascontiguousarray(img).astype(np.uint8)
+    if img.ndim != 3 or img.shape[2] != 3:
+        return img
+    h, w = img.shape[:2]
+    return cv2.resize(img, (int(round(w * scale)), int(round(h * scale))), interpolation=cv2.INTER_CUBIC)
+
 
 def _overlay_instruction(img, text):
     """Draw the task instruction as a centered banner at the bottom of a frame (RGB uint8)."""
@@ -274,6 +293,11 @@ class Runner:
             host = os.environ.get("RLDX_HOST", "127.0.0.1")
             port = int(os.environ.get("RLDX_PORT", "20000"))
             self.policy = RLDXInference(host=host, port=port, policy_setup=policy_setup)
+        elif all_args.vla_kind == "xvla":
+            from simpler_env.policies.xvla.xvla import XVLAPolicy
+
+            # host/port/chunk are read from XVLA_* env vars by the client itself.
+            self.policy = XVLAPolicy()
         elif all_args.vla_kind == "pi05":
             from simpler_env.policies.pi05.pi05 import Pi05Inference
 
@@ -378,6 +402,9 @@ class Runner:
             images = datas[i]["image"]
             infos = datas[i]["info"]
             assert len(images) == len(infos) + 1
+
+            for _k in range(len(images)):
+                images[_k] = _upscale_for_video(images[_k])
 
             if self.args.render_info:
                 for j in range(len(infos)):

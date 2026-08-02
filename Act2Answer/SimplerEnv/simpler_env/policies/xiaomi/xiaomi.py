@@ -283,7 +283,10 @@ class XiaomiRoboticsPolicy:
         #         - 'terminate_episode': np.ndarray of shape (1,), 1 if episode should be terminated, 0 otherwise
         # """
         
-        if not self.action_plans:
+        # A new task description means a new task: drop the cached plans instead of
+        # tripping the assert below. Chunked evals reuse one policy across chunks, so
+        # the instruction changes at every chunk boundary.
+        if not self.action_plans or task_descriptions != self.task_descriptions:
             self.reset(task_descriptions)
 
         # print(f"{self.task_descriptions=}")

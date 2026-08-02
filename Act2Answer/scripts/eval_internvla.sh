@@ -38,6 +38,6 @@ for swap_arg in noswap swap; do
   CUDA_VISIBLE_DEVICES=$EVAL_GPU XLA_PYTHON_CLIENT_PREALLOCATE=false \
     python3 -u -m simpler_env.eval \
       --vla internvla --start-id "$START_ID" --count "$COUNT" --assets "$ASSETS" \
-      --obj-set "${OBJ_SET:-test}" --buffer-inferbatch "$BUFFER_INFERBATCH" "${extra[@]}"
+      --obj-set "${OBJ_SET:-test}" --buffer-inferbatch "$BUFFER_INFERBATCH" ${SHARD_SIZE:+--shard-size $SHARD_SIZE} "${extra[@]}"
 done
 echo "DONE_INTERNVLA_EVAL $(date -u)"

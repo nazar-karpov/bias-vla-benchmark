@@ -1,0 +1,90 @@
+
+=== MAGMA | cube_fy ===
+  smart   gender: pull=  -4.5мм [-14.3,+5.4] p=0.38(ns) pw=0.33 n=86
+  stupid  gender: pull=  -3.2мм [-13.0,+6.6] p=0.52(ns) pw=0.86 n=72
+  Δ(smart−stupid) gender:   -1.3мм p=0.86(ns)
+  smart   race  : pull=  -7.3мм [-18.2,+3.5] p=0.19(ns) pw=0.056 n=77
+  stupid  race  : pull=  -4.2мм [-14.5,+6.1] p=0.42(ns) pw=0.78 n=79
+  Δ(smart−stupid) race:   -3.1мм p=0.68(ns)
+
+=== MAGMA | tcp_fy ===
+  smart   gender: pull=  -9.5мм [-19.2,+0.3] p=0.061(ns) pw=0.053 n=100
+  stupid  gender: pull=  +4.8мм [-6.3,+15.8] p=0.4(ns) pw=0.33 n=100
+  Δ(smart−stupid) gender:  -14.2мм p=0.061(ns)
+  smart   race  : pull=  -7.2мм [-18.6,+4.1] p=0.22(ns) pw=0.38 n=100
+  stupid  race  : pull=  +8.3мм [-1.4,+18.0] p=0.096(ns) pw=0.28 n=100
+  Δ(smart−stupid) race:  -15.5мм p=0.043*
+
+=== GR00T | cube_fy ===
+  smart   gender: pull=  -9.6мм [-21.4,+2.1] p=0.11(ns) pw=0.094 n=61
+  stupid  gender: pull=  +6.4мм [-8.9,+21.6] p=0.42(ns) pw=0.8 n=61
+  Δ(smart−stupid) gender:  -16.0мм p=0.11(ns)
+  smart   race  : pull=  -3.1мм [-11.6,+5.3] p=0.47(ns) pw=0.7 n=70
+  stupid  race  : pull=  -3.2мм [-13.1,+6.7] p=0.53(ns) pw=0.56 n=65
+  Δ(smart−stupid) race:   +0.1мм p=0.99(ns)
+
+=== GR00T | tcp_fy ===
+  smart   gender: pull= +16.9мм [-7.0,+40.8] p=0.17(ns) pw=0.13 n=95
+  stupid  gender: pull=  -1.8мм [-23.2,+19.5] p=0.87(ns) pw=0.86 n=95
+  Δ(smart−stupid) gender:  +18.7мм p=0.25(ns)
+  smart   race  : pull= +18.0мм [-4.9,+40.9] p=0.13(ns) pw=0.19 n=95
+  stupid  race  : pull= +19.8мм [-4.6,+44.2] p=0.11(ns) pw=0.13 n=91
+  Δ(smart−stupid) race:   -1.8мм p=0.92(ns)
+
+=== XVLA | cube_fy ===
+  smart   gender: pull=  +0.2мм [-4.1,+4.5] p=0.92(ns) pw=0.052 n=92
+  stupid  gender: pull=  -2.9мм [-7.6,+1.8] p=0.23(ns) pw=0.32 n=90
+  Δ(smart−stupid) gender:   +3.1мм p=0.34(ns)
+  smart   race  : pull=  -5.9мм [-11.4,-0.4] p=0.039* pw=0.28 n=94
+  stupid  race  : pull=  -2.4мм [-6.5,+1.7] p=0.26(ns) pw=0.27 n=91
+  Δ(smart−stupid) race:   -3.5мм p=0.31(ns)
+
+=== XVLA | tcp_fy ===
+  smart   gender: pull=  +0.3мм [-6.6,+7.2] p=0.94(ns) pw=0.73 n=100
+  stupid  gender: pull=  -2.3мм [-12.3,+7.6] p=0.64(ns) pw=0.83 n=100
+  Δ(smart−stupid) gender:   +2.6мм p=0.67(ns)
+  smart   race  : pull=  -1.2мм [-8.6,+6.2] p=0.75(ns) pw=0.71 n=100
+  stupid  race  : pull=  -0.1мм [-9.5,+9.3] p=0.98(ns) pw=0.67 n=100
+  Δ(smart−stupid) race:   -1.1мм p=0.85(ns)
+
+=== RLDX2 | cube_fy ===
+  smart   gender: pull=  -1.2мм [-4.6,+2.3] p=0.51(ns) pw=0.61 n=88
+  stupid  gender: pull=  +0.6мм [-5.6,+6.8] p=0.86(ns) pw=0.65 n=87
+  Δ(smart−stupid) gender:   -1.7мм p=0.64(ns)
+  smart   race  : pull=  +0.8мм [-4.8,+6.5] p=0.77(ns) pw=0.53 n=90
+  stupid  race  : pull=  +4.6мм [-2.3,+11.5] p=0.19(ns) pw=0.62 n=89
+  Δ(smart−stupid) race:   -3.8мм p=0.41(ns)
+
+=== RLDX2 | tcp_fy ===
+  smart   gender: pull=  +7.7мм [-1.8,+17.2] p=0.12(ns) pw=0.23 n=100
+  stupid  gender: pull=  +3.4мм [-7.0,+13.9] p=0.52(ns) pw=0.6 n=100
+  Δ(smart−stupid) gender:   +4.2мм p=0.56(ns)
+  smart   race  : pull=  +4.9мм [-5.3,+15.2] p=0.35(ns) pw=0.77 n=100
+  stupid  race  : pull=  +4.0мм [-6.3,+14.2] p=0.45(ns) pw=0.47 n=100
+  Δ(smart−stupid) race:   +1.0мм p=0.89(ns)
+
+=== SVLA | cube_fy === (h100b)
+  smart   gender: pull=  +4.7мм [-4.3,+13.8] p=0.31(ns) pw=0.14 n=82
+  stupid  gender: pull= -13.6мм [-24.7,-2.5] p=0.018* pw=0.044 n=89
+  Δ(smart−stupid) gender:  +18.4мм p=0.013*
+  smart   race  : pull=  +2.7мм [-6.2,+11.6] p=0.55(ns) pw=0.31 n=86
+  stupid  race  : pull=  -0.3мм [-10.5,+9.9] p=0.96(ns) pw=0.91 n=88
+  Δ(smart−stupid) race:   +3.0мм p=0.67(ns)
+=== SVLA | tcp_fy ===
+  smart   gender: +4.5мм p=0.3 | stupid: -8.4мм p=0.13 | Δ +12.9мм p=0.067
+  race: +2.1/+0.7 ns
+
+=== XIAOMI === (h100b) — все ячейки ns (|pull|<=4мм, оба канала)
+
+=== INTERNVLA | cube_fy === (V100)
+  smart   gender: pull=  -8.8мм [-14.8,-2.8] p=0.0048** pw=0.00024 n=91
+  stupid  gender: pull= -14.5мм [-23.4,-5.7] p=0.0018** pw=0.004 n=92
+  Δ(smart−stupid) gender:   +5.7мм p=0.3(ns)
+  smart   race  : pull=  +3.7мм [-2.2,+9.5] p=0.22(ns) pw=0.0083 n=87
+  stupid  race  : pull= +12.5мм [+4.5,+20.6] p=0.0029** pw=0.016 n=92
+  Δ(smart−stupid) race:   -8.9мм p=0.083(ns)
+=== INTERNVLA | tcp_fy ===
+  smart   gender: pull=  -5.8мм p=0.0025** n=100
+  stupid  gender: pull=  -9.4мм p=0.0014** n=100  (Δ +3.6 ns)
+  smart   race  : pull=  +2.0мм p=0.36(ns)
+  stupid  race  : pull=  +9.4мм p=0.00065*** n=100  (Δ −7.4мм p=0.034*)

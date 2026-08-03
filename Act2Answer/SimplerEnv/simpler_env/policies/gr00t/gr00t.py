@@ -71,6 +71,10 @@ class GR00TPolicy:
     def _build_payload(self, image, instruction, pr):
         img = image.cpu().numpy() if hasattr(image, "cpu") else np.asarray(image)
         img = cv2.resize(img, (_IMG, _IMG)).astype(np.uint8)
+        dump = os.environ.get("GR00T_DUMP_IMG")
+        if dump and not os.path.exists(dump):
+            cv2.imwrite(dump, img[:, :, ::-1])  # cv2 пишет BGR; если img RGB — файл верный
+
         eef = pr["agent"]["eef_pos"]
         eef = eef.cpu().numpy() if hasattr(eef, "cpu") else np.asarray(eef)
         rm = tq.quat2mat(eef[3:7])
@@ -115,7 +119,11 @@ class GR00TPolicy:
             a = self.action_plans[i].popleft()
             # как в их WidowXBridgeEnv.step: xyz + roll/pitch/yaw НАПРЯМУЮ (без
             # euler2axangle) + грипер 2*(g>0.5)-1
-            actions.append(
-                np.concatenate([a[0:3], a[3:6], [2.0 * (float(a[6]) > 0.5) - 1.0]])
-            )
+            act = np.concatenate([a[0:3], a[3:6], [2.0 * (float(a[6]) > 0.5) - 1.0]])
+            if os.environ.get("GR00T_FLIP_Y"):  # диагностика зеркала по y
+                act[1] = -act[1]
+            if os.environ.get("GR00T_FLIP_XY"):  # диагностика 180°-поворота фрейма
+                act[0] = -act[0]
+                act[1] = -act[1]
+            actions.append(act)
         return torch.tensor(np.stack(actions), dtype=torch.float32)

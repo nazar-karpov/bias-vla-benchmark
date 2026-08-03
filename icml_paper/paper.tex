@@ -1,4 +1,4 @@
-%%%%%%%% ICML 2025 — русскоязычная версия (xelatex + fontspec) %%%%%%%%
+%%%%%%%% ICML 2025 — English version (pdflatex, standard ICML Times) %%%%%%%%
 \documentclass{article}
 
 \usepackage{microtype}
@@ -8,388 +8,569 @@
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
 \usepackage[accepted]{icml2025}
 
+% Remove the bottom notice 'Proceedings of the 42nd ICML ... Copyright 2025'.
+\makeatletter
+\renewcommand{\Notice@String}{}
+\makeatother
+
 \usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage[small,skip=2pt]{caption}
 \usepackage{amssymb}
 \usepackage{mathtools}
 
-% --- кириллица через fontspec (компилировать xelatex/lualatex) ---
-\usepackage{fontspec}
-\usepackage{polyglossia}
-\setmainlanguage{russian}
-\setotherlanguage{english}
-\setmainfont{Times New Roman}
-\newfontfamily\cyrillicfont{Times New Roman}
-\setmonofont{Consolas}[Scale=0.85]
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 
-\icmltitlerunning{Проникает ли bias бэкбона в действия VLA-робота}
+\icmltitlerunning{It Knows but Does Not Reach}
 
 \begin{document}
 
 \twocolumn[
-\icmltitle{Проникает ли демографический bias языкового бэкбона\\
-           в действия VLA-робота? Бенчмарк на двух осях}
+\icmltitle{It Knows but Does Not Reach: Action-Wrapper Permeability\\
+           as a Moderator of Bias Transfer from Backbone to VLA Action}
 
 \icmlsetsymbol{equal}{*}
 
 \begin{icmlauthorlist}
-\icmlauthor{Назар Карпов}{equal,airi}
-\icmlauthor{Роман}{equal,airi}
+\icmlauthor{Nazariy Karpov}{equal,airi}
+\icmlauthor{Roman Tarasov}{equal,airi}
+\icmlauthor{Egor Cherepanov}{airi}
+\icmlauthor{Andrey Moskalenko}{airi}
+\icmlauthor{Nikita Kachaev}{airi}
 \end{icmlauthorlist}
 
-\icmlaffiliation{airi}{Проект Bias Benchmark для Vision-Language-Action моделей}
+\icmlaffiliation{airi}{Bias Benchmark Project for Vision-Language-Action Models}
 
-\icmlcorrespondingauthor{Назар Карпов}{nazkarpov@gmail.com}
+\icmlcorrespondingauthor{Nazariy Karpov}{nazkarpov@gmail.com}
 
 \icmlkeywords{Vision-Language-Action, bias, safety, robotics, fairness}
 
-\vskip 0.3in
+\vskip 0.2in
 ]
 
 \printAffiliationsAndNotice{\icmlEqualContribution}
 
 \begin{abstract}
-Vision-Language-Action (VLA) модели наследуют мультимодальный языковой бэкбон,
-который несёт как социальные стереотипы, так и представления о безопасности. Доходят
-ли эти суждения до \emph{физического действия} робота или гасятся action-обвязкой~---
-вопрос открытый. Мы строим воспроизводимый бенчмарк, который измеряет смещение VLA не
-по тексту ответа, а по тому, куда робот кладёт объект, когда его просят выбрать между
-двумя картинками. Единый протокол мы применяем к \textbf{двум осям}: демографической
-(выбор между двумя людьми разного пола или расы) и safety (выбор между картинкой с
-оружием и безопасным предметом). Метод стоит на двух опорах: (i)~метрики с
-контрбалансом порядка~--- для демографии дополнительно непрерывное «притяжение» руки в
-мм, где моторная привычка сокращается алгебраически; (ii)~контроли (негативная/
-антонимная полярность, контрбаланс, проверка валидности через VLM-потолок на том же
-кадре). На демографической оси (7~VLA, ${\approx}57\,000$ прогонов) надёжных эффектов
-ровно три, все у Magma-VLA и InternVLA-M1, при том что бэкбоны предвзяты почти все. На
-safety-оси (8~VLA, SOHAS) чувствительность к вопросу не превышает $S{=}{+}0.32$ из
-возможных ${+}1$, у половины моделей~--- ноль, хотя базовые VLM на том же кадре решают
-задачу на 69--90\%. Обе оси дают один вывод:
-\textbf{Bias VLA = семантика бэкбона $\times$ проницаемость action-обвязки}~--- понимание
-в VLM есть, до моторного канала оно почти не доходит. Обе оси показывают и общий
-методический урок: без обратной (антонимной) полярности «понимает» и «тянется к
-заметному объекту» неразличимы~--- Magma на safety без неё выглядела бы лидером.
+We show that the bias of a multimodal backbone barely predicts the behavioural bias of a
+VLA robot, and we measure the link that breaks this connection: the \emph{action
+wrapper}~--- the action head and its decoder, whose bandwidth for semantic priors has not
+been measured so far. Our protocol records bias not from the text of an answer but from
+the final pose of the manipulator; it relies on paired order counterbalancing, reverse
+question polarity and a VLM ceiling on the same frame, and it yields two independent
+metrics: a discrete sensitivity to phrasing $S$ and a continuous pull in millimetres. On
+the demographic axis (7~VLAs, ${\approx}57\,000$ runs) exactly three effects pass the
+reliability criterion, whereas almost all backbones are biased; on the safety axis
+(8~VLAs, SOHAS) sensitivity never exceeds $S{=}{+}32$~pp out of a possible ${+}100$. The
+most telling number is the gap inside a single architecture: Qwen3-VL recognises a weapon
+in 89.6\% of cases, while Xiaomi-Robotics-0, built on a close backbone, yields
+$S{=}{+}2$~pp.
 \end{abstract}
 
 \section{Introduction}
 
-\textbf{Мотивация.} VLA-модели переносят предобученный vision-language backbone в контур
-управления роботом: та же сеть, что описывает картинку, теперь выбирает действие. Если
-backbone ассоциирует «стюардессу» с женщиной, встаёт вопрос~--- превращается ли эта
-ассоциация в \textbf{дискриминирующее физическое поведение}. Тот же вопрос стоит и о
-безопасности: если backbone узнаёт оружие на картинке, доводит ли робот это знание до
-руки, когда его просят различить опасный и безопасный предмет. В отличие от текстовых
-бенчмарков, здесь измеряемая величина~--- не токен, а траектория, и обе оси (демография,
-safety) меряются одним протоколом.
+% Teaser is a tall vertical float at the bottom of a column: the default
+% \bottomfraction=0.3 is too small for it, otherwise LaTeX pushes it pages ahead.
+\renewcommand{\bottomfraction}{0.65}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\dblfloatpagefraction}{0.8}
 
-\textbf{Проблема и ограничения существующих подходов.} Наивный перенос текстовых метрик
-на VLA даёт артефакты по трём причинам, которые мы наблюдали эмпирически:
-(1)~\textbf{позиционный крен}~--- модель систематически предпочитает одну сторону
-(left/right), и этот крен нестабилен между выборками (у PaliGemma 69\% Right на
-подвыборке $\to$ 71\% Left на полном наборе), т.е. это шум декодера, а не свойство
-модели; (2)~\textbf{моторный шум}~--- VLA часто «не доводит» объект (answer-rate 8--96\%
-в зависимости от модели), и распределение выборов путается с умением выполнить задачу;
-(3)~\textbf{салиентность стимула}~--- датасеты пар не параллельны (смена демографии
-меняет ${\sim}35\%$ пикселей), поэтому «яркое» фото тянет руку независимо от вопроса.
+% Tighter captions and float separation: saves ~a page with no loss of content.
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovedisplayskip}{4pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{4pt plus 2pt minus 2pt}
 
-\textbf{Вклады.}
-\begin{enumerate}
-\item \textbf{Бенчмарк bias для VLA}, измеряющий смещение по физическому действию, с
-протоколом, который отделяет демографический сигнал от позиционного и моторного шума
-(контрбаланс порядка noswap/swap + негативная полярность + проверка валидности).
-\item \textbf{Две метрики}: дискретный выбор ($S = \text{pos} - \text{neg}$, пп,
-binomtest) и непрерывное притяжение в мм, где моторная привычка сокращается внутри пары
-алгебраически. Их согласие делает надёжные эффекты робастными к произволу метрики.
-\item \textbf{Эмпирический результат на 7~VLA + 4~VLM-бэкбонах} (${\sim}57\,000$
-прогонов): надёжных VLA-эффектов ровно три, все у двух моделей; бэкбоны при этом
-предвзяты почти все.
-\item \textbf{Модель объяснения} $\text{Bias VLA} = \text{семантика бэкбона} \times
-\text{проницаемость обвязки}$ и её количественная опора~--- декомпозиция выборов на «за
-человеком» и «за стороной».
-\item \textbf{Safety-ось тем же протоколом} (SOHAS, «оружие vs безопасный предмет»):
-показываем, что вывод про непроницаемость обвязки не специфичен для демографии~--- на
-safety лучший $S{=}{+}0.32$ из ${+}1$, а VLM-потолок на том же кадре 69--90\%.
+\begin{figure}[!b]
+\vskip -0.1in
+\begin{center}
+\includegraphics[width=0.52\columnwidth]{figs/fig0_teaser_stacked.png}
+\end{center}
+\vskip -0.05in
+\caption{\textbf{The task in one picture.} The robot is instructed to ``put the cube on
+the \emph{boss}'' with two candidates differing in race (white on the left, black on the
+right). The only answer is where the manipulator goes: it picks up the cube (top) and
+places it on one of the tiles (bottom). This is how a demographic prior of the backbone
+turns into a physical action~--- or fails to, if the action wrapper does not pass it
+through.}
+\label{fig:teaser}
+\vskip -0.1in
+\end{figure}
+
+VLA models move a pretrained multimodal backbone into the robot control loop: the same
+network that used to describe an image now selects an action. For the text outputs of
+such backbones, gender and racial stereotypes are documented \citep{fraser2024pairs}, as
+is their ability to recognise dangerous objects \citep{qu2024unsafebench, ha2023hod}.
+This raises a practical certification question: can robot behaviour be judged from the
+properties of its backbone? If the backbone associates the role ``flight attendant'' with
+a woman, is the robot bound to turn that association into a discriminatory physical
+action?
+
+The answer cannot be obtained by carrying text metrics over to action: three artefacts
+stand in the way~--- decoder positional bias, motor failure and stimulus salience,~---
+each of which can produce an effect in the absence of any semantic signal. We remove them
+by experimental design (Section~\ref{sec:method}) and test two competing hypotheses: the
+transparent-channel hypothesis (H1), under which robot bias is predictable from backbone
+bias, and the moderation hypothesis (H2), under which transfer is multiplicatively
+limited by the bandwidth of the wrapper. Data on two independent axes reject H1 and are
+consistent with H2.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=0pt,parsep=0pt,topsep=2pt]
+\item A protocol for measuring VLA bias from the final pose of the manipulator that
+removes all three artefacts by construction: paired order counterbalancing, reverse
+question polarity and a stimulus validity check.
+\item Two independent metrics of the same bias~--- the discrete sensitivity $S$ and the
+continuous pull in millimetres, for which we state the conditions of unbiasedness.
+\item A result on 7~VLAs and 4~backbones (${\approx}57\,000$ runs): exactly three effects
+pass the reliability criterion, all in two models, while backbone bias reproduces almost
+universally; the conclusion is replicated on a second axis (SOHAS), where the best
+$S{=}{+}32$~pp against a VLM ceiling of 69--90\%.
 \end{enumerate}
 
-\section{Related Work / Background}
+\section{Related Work}
 
-\textbf{Bias и safety в VLM.} Для vision-language моделей документированы гендерные и
-расовые стереотипы (атрибуция профессий); демографическая ось следует логике
-PAIRS-подобных датасетов. Для safety существуют наборы распознавания опасных объектов
-(UnsafeBench, SafeEditBench, HOD, SOHAS); мы используем их как VLM-потолок и берём SOHAS
-как самый однозначный. В обоих случаях замер останавливается на тексте~--- мы продолжаем
-его до действия робота.
+\paragraph{Measuring bias in multimodal models.} Gender and racial bias in
+vision-language models is assessed on parallel images differing in exactly one attribute;
+the canonical example of this design is PAIRS \citep{fraser2024pairs}, whose logic our
+demographic axis follows. Datasets for recognising dangerous objects~--- UnsafeBench
+\citep{qu2024unsafebench}, HOD \citep{ha2023hod} and SOHAS \citep{salazar2020sohas}~---
+are built for image classification, and we use them in that original role only as a
+ceiling measure: they tell us what the model \emph{sees} in the frame. What both groups
+of work share is that measurement stops at the text output. We continue the chain to
+action and therefore measure a different property of the model.
 
-\textbf{VLA-модели.} Мы тестируем открытый спектр: Magma, SpatialVLA, InternVLA-M1, RLDX,
-Xiaomi-Robotics-0, xVLA и GR00T-N1.7. Их роднит общий рецепт~--- VLM-бэкбон + action-
-голова (дискретизация действий, diffusion- или flow-matching-декодер), но обвязки
-различаются, что и оказывается решающим.
+\paragraph{VLA models and the design of the wrapper.} We test an open spectrum of
+architectures: Magma \citep{yang2025magma}, SpatialVLA \citep{qu2025spatialvla},
+InternVLA-M1 \citep{chen2025internvla}, OpenVLA \citep{kim2024openvla},
+Xiaomi-Robotics-0 \citep{cai2026xiaomi}, X-VLA \citep{zheng2025xvla}, GR00T-N1.7
+\citep{nvidia2025groot} and $\pi_{0.5}$ \citep{black2025pi05}. They share a common
+recipe~--- a multimodal backbone with an action head built on top~--- but differ in how
+the action is produced: discretisation into action tokens, a diffusion decoder,
+flow matching. It is this difference, not the choice of backbone, that turns out to be
+decisive for bias transfer.
 
-\textbf{Симуляция.} Прогоны идут в SimplerEnv (SAPIEN/Vulkan, WidowX), единый
-манипуляционный сетап «поставь кубик на плитку» поверх Act2Answer-карточек.
+\paragraph{Manipulation simulation.} Runs are performed in SimplerEnv
+\citep{li2024simplerenv} on top of the SAPIEN physics engine \citep{xiang2020sapien} with
+the WidowX platform. We use a single manipulation setup, ``put the cube on the target'',
+which makes models with incompatible action spaces comparable.
 
-\textbf{Отличие нашей работы.} Существующие fairness-замеры останавливаются на выходе
-VLM. Мы замыкаем цепочку до действия и показываем: станет ли предвзятый backbone
-предвзятым роботом, решает промежуточное звено~--- action-голова.
+\section{Problem Setup}
 
-\section{Problem Formulation}
+The scene contains two tiles with photographs of people differing in exactly one
+attribute $a \in \{\text{gender}, \text{race}\}$ with values $\{+,-\}$ (man/woman,
+white/non-white), placed on the left and on the right. The model receives an instruction
+$q$ of the form ``put the cube on the one who is more likely to be a
+$\langle$role$\rangle$'' and produces a trajectory, from which we extract the final
+coordinate $y$ along the tile axis and the discrete choice
+$c \in \{\text{left}, \text{right}\}$.
 
-Пусть сцена содержит два изображения людей, различающихся по одному демографическому
-признаку $a \in \{\text{пол}, \text{раса}\}$ со значениями $\{+, -\}$
-(мужчина/женщина, белый/небелый), на позициях left/right. Модель получает запрос $q$
-(«поставь кубик на того, кто вероятнее $\langle$роль$\rangle$») и порождает траекторию;
-фиксируется финальная координата $y$ по оси плиток и дискретный выбор $c \in
-\{\text{left}, \text{right}\}$.
-
-Каждую сцену прогоняем в двух порядках~--- noswap и swap (демография меняет сторону).
-Обозначим $d = \pm 1$~--- на какой стороне находится значение~$+$. Финальную координату
-моделируем как
+Each scene is run in two layouts, noswap and swap, in which the attribute value changes
+side. Let $d = \pm 1$ denote the side occupied by value~$+$. We model the final
+coordinate additively:
 \begin{equation}
 y = h + b\,d + \varepsilon,
+\label{eq:model}
 \end{equation}
-где $h$~--- моторная привычка (одинакова внутри пары noswap/swap), $b$~--- искомое
-демографическое \textbf{притяжение}, $\varepsilon$~--- шум. Тогда
+where $h$ is the motor habit of the model, $b$ is the pull towards value~$+$ that we
+seek, and $\varepsilon$ is noise. The estimator of $b$ is the half-difference of final
+coordinates within a pair:
 \begin{equation}
-\text{pull} = \tfrac{1}{2}(y_{\text{noswap}} - y_{\text{swap}})\,d = b,
+\widehat{b} \;=\; \tfrac{1}{2}\bigl(y_{\text{noswap}} - y_{\text{swap}}\bigr)\,d .
+\label{eq:pull}
 \end{equation}
-и привычка $h$ сокращается внутри пары. Для дискретной метрики берём
-$S = P(\text{выбрал}~{+} \mid \text{pos}) - P(\text{выбрал}~{+} \mid \text{neg})$ в
-процентных пунктах. Bias-эффект считается \textbf{надёжным}, если он значим ($p<.001$)
-и повторяется во всех каналах зачёта одновременно.
+Estimator \eqref{eq:pull} is unbiased under two assumptions: the habit $h$ does not
+depend on the layout, and the noise has zero mean. When they hold, $h$ cancels
+algebraically and the quantity $\widehat{b}$, hereafter the \emph{pull}, is expressed in
+millimetres of workspace. Invariance of $h$ to the layout is a substantive assumption,
+not a consequence of the design: it is violated if the model changes its motor strategy
+in response to swapping the tiles.
 
-\section{Method / Proposed Approach}
+The discrete measure is the sensitivity to phrasing
+\begin{equation}
+S \;=\; P(c \,{=}\, {+} \mid \text{pos}) \;-\; P(c \,{=}\, {+} \mid \text{neg}),
+\label{eq:s}
+\end{equation}
+where pos and neg are the direct and reverse polarities of the question; $S$ is
+expressed in percentage points (pp) and ranges from $-100$ to $+100$. A value of $S{=}0$
+means that the phrasing of the question does not affect the choice.
 
-\textbf{Единый манипуляционный протокол.} Один и тот же тип эпизода для всех моделей: две
-плитки с фото, запрос-роль, до 80 шагов. Это делает 7 разнородных VLA сопоставимыми.
+We call an effect \emph{reliable} if it is significant at $p<.001$ and preserves its
+sign simultaneously in all four scoring channels defined in Section~\ref{sec:method}.
+The significance of an individual conditional proportion is assessed with a two-sided
+binomial test against $0.5$.
 
-\textbf{Контрбаланс порядка (noswap/swap).} Каждая сцена прогоняется дважды с зеркальной
-раскладкой. Разница снимает позиционный крен на уровне пары; в непрерывной метрике~---
-алгебраически сокращает $h$.
+\section{Method}
+\label{sec:method}
 
-\textbf{Полярность (негативная/антонимная).} Для каждой пары задаём два противоположных
-вопроса. На демографии~--- boss/employee: без этого «заметность» фото маскируется под
-эффект (контроль поймал ложный «босс$\to$чёрные» у PaliGemma). На safety~--- антоним
-«weapon»/«harmless everyday object» (не отрицание~--- отрицания VLM парсят плохо).
-Метрика чувствительности $S = \text{pos} - \text{neg}$ без обратного вопроса
-бессмысленна: «понимает» и «тянется к заметному объекту» дают одинаковые числа на
-прямом вопросе и расходятся только по~$S$.
+\paragraph{A single manipulation protocol.} All models solve an episode of the same
+type: two tiles with photographs, a role instruction, and at most 80 simulation steps.
+The only difference between models is their own action interface. This unification makes
+architectures trained on different action spaces comparable.
 
-\textbf{Проверка валидности.} Отдельно спрашиваем «свой» и «чужой» атрибут; если модель
-отвечает одинаково, замер бессмыслен. На yes/no-дизайне свой атрибут даёт
-$P(\text{yes}){=}0.90$ против $0.05$ на чужой~--- метод различает.
+\paragraph{Order counterbalancing.} Every scene is run twice in mirrored layouts. In the
+discrete metric the difference between layouts eliminates positional bias at the level of
+the pair; in the continuous metric it cancels the motor habit according to
+\eqref{eq:pull}. The scale of the artefact thus removed is shown in
+Figure~\ref{fig:posbias}: with identical images, the share of left-tile choices ranges
+from 7\% for GR00T to 94\% for Xiaomi-Robotics-0 (mean absolute skew across models about
+27~pp), that is, for most models the positional habit is an order of magnitude stronger
+than any semantic effect. Counterbalancing removes this artefact without requiring a
+model of its source.
 
-\textbf{Четыре канала зачёта} для дискретной метрики: cube@1см (куб точно на плитке,
-z-гейт), cube@8см (широкая зона), half (любой сдвиг по оси), intent (первое касание).
-Требование совпадения знака во всех каналах~--- фильтр против шума множественных
-сравнений.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\columnwidth]{figs/positional_bias.png}
+\caption{Positional bias: share of left-tile choices by model in the strictest scoring
+channel. Pale bars mark models with few successful episodes. The 50\% level corresponds
+to no skew.}
+\label{fig:posbias}
+\end{figure}
 
-\textbf{Декомпозиция проницаемости.} Выбор классифицируется как «за человеком»
-(устойчив к перестановке = демографический) либо «за стороной» (флипается со стороной =
-моторный). Доля «за человеком» = операциональная мера проницаемости обвязки.
+\paragraph{Reverse question polarity.} For every pair we ask two opposite questions: on
+the demographic axis, boss versus employee; on the safety axis, the antonym weapon versus
+harmless everyday object. We deliberately use an antonym rather than a negation, because
+negations are parsed unreliably by models. Reverse polarity separates task understanding
+from a reaction to salience: both strategies give identical numbers on the direct
+question and diverge only in $S$. The control is effective~--- it exposed the spurious
+``boss$\,\to\,$black'' effect in PaliGemma, which looked robust on the direct question.
+
+\paragraph{Stimulus validity check.} We separately ask the model about the target
+attribute and about an unrelated one. Matching answers mean that the model does not
+resolve the stimulus, and any bias measurement on it is meaningless. In the single-image
+yes/no design the target attribute yields $P(\text{yes}){=}0.90$ against $0.05$ for the
+unrelated one, so the stimulus is resolved.
+
+\paragraph{Four scoring channels.} The discrete choice is recorded independently under
+four criteria of increasing strictness: cube@1cm (cube inside the tile, with a height
+constraint), cube@8cm (extended zone), half (any displacement along the tile axis) and
+intent (first touch). The channels are nested and therefore not independent; requiring
+the sign to agree across all four acts as a conservative filter against
+multiple-comparison noise, but it is not an independent replication of the effect.
+
+\paragraph{Permeability decomposition.} We assign every choice to one of two types. An
+\emph{attributive} choice is invariant to swapping the tiles and is therefore determined
+by the depicted person; a \emph{positional} choice changes with the side and is therefore
+determined by motor behaviour. We take the share of attributive choices as an operational
+measure of action-wrapper permeability.
 
 \section{Experimental Setup}
+\label{sec:setup}
 
-\textbf{Датасеты.} \emph{Демография:} PAIRS-подобные карточки (occupations, status,
-crime); 4 главные вопрос-пары для VLA, 33 вопроса для VLM-кросса. Пары \textbf{не
-параллельны} (${\sim}35\%$ пикселей меняются)~--- используем парную $\Delta$ и
-по-вопросные тесты. \emph{Safety:} SOHAS (9544 изображения, 6 классов)~--- выбран из
-четырёх наборов (UnsafeBench, SafeEditBench, HOD, SOHAS) по \textbf{VLM-потолку}:
-конкретный вопрос об оружии даёт 90.6\% на unsafe и 93\% устойчивых к перестановке пар,
-тогда как UnsafeBench 6.7\% и HOD 26\% сделали бы нулевой результат VLA
-неинтерпретируемым. Рабочий набор sohas96x2~--- факториал 2 класса оружия $\times$ 4
-дистрактора = 96 пар, ровно 48/48 по сторонам, два антонимных вопроса на пару.
+\paragraph{Data.} The demographic axis is built on cards following the logic of PAIRS
+\citep{fraser2024pairs} across three themes: occupations, status, crime; for VLAs we use
+4 main question pairs, and 33 questions for the backbone cross. The pairs are not
+parallel: changing demographics alters about 35\% of the pixels, so we rely on paired
+differences and per-question tests rather than on comparing absolute proportions. The
+safety axis is built on SOHAS \citep{salazar2020sohas}. We selected it out of four
+candidates by VLM ceiling (90.6\% on the unsafe class against 6.7\% for UnsafeBench and
+26\% for HOD): with a low ceiling a null VLA result is uninterpretable~--- an impermeable
+wrapper cannot be told apart from an unreadable stimulus. The working set sohas96x2 is
+factorised: 2 weapon classes $\times$ 4 distractors give 96 pairs with a 48/48 side
+balance and two antonymic questions per pair.
 
-\textbf{Модели.} \emph{Демография:} 7~VLA (Magma, SpatialVLA, InternVLA-M1, RLDX2,
-Xiaomi, xVLA, GR00T) + 4~VLM. \emph{Safety:} 8~VLA (Magma, InternVLA-M1, OpenVLA,
-SpatialVLA, RLDX-1, Xiaomi, X-VLA, pi0.5) + 8 базовых VLM на том же кадре.
+\paragraph{Models.} On the demographic axis we test 7~VLAs (Magma, SpatialVLA,
+InternVLA-M1, RLDX2, Xiaomi-Robotics-0, xVLA, GR00T) and 4 backbones. On the safety
+axis~--- 8~VLAs (Magma, InternVLA-M1, OpenVLA, SpatialVLA, RLDX-1, Xiaomi-Robotics-0,
+X-VLA, $\pi_{0.5}$) and 8 base VLMs receiving the same simulation frame.
 
-\textbf{Объём.} Демография: ${\sim}3200$ проходов/VLA (1600 эп $\times$ noswap+swap),
-VLM-кросс до 26\,400 запросов; ${\approx}57\,000$ всего. Safety: 96 пар $\times$ 2
-полярности $\times$ 2 раскладки = \textbf{384 прохода} на модель (то же для
-VLM-контроля).
+\paragraph{Scale and power.} Demographic axis: about 3200 passes per model (1600
+episodes $\times$ 2 layouts), up to 26\,400 queries in the backbone cross,
+${\approx}57\,000$ runs in total. Safety axis: $96 \times 2 \times 2 = 384$ passes per
+model and the same number for the VLM control. Across the demographic axis we run about
+512 discrete tests in total, so at level $\alpha{=}.05$ one should expect on the order of
+26 false positives; the reliability criterion of Section~\ref{sec:method} is introduced
+precisely as this correction.
 
-\textbf{Метрики.} Дискретная~--- $S$ (пп), значимость binomtest vs 50\%.
-Непрерывная~--- pull (мм), t-тест + Wilcoxon по каждому вопросу, 95\% CI.
-
-\textbf{Ресурсы.} Симуляция SimplerEnv (SAPIEN/Vulkan) на серверах с Tesla V100 и H100.
+\paragraph{Statistical procedures.} For the discrete metric we use a two-sided binomial
+test against 0.5; for the continuous one, a paired t-test and the Wilcoxon test per
+question with 95\% confidence intervals. We replace a formal FDR control procedure with a
+conjunctive criterion across four channels (see Section~\ref{sec:limits}). Runs were
+performed in SimplerEnv \citep{li2024simplerenv} on Tesla V100 and H100 GPUs.
 
 \section{Results}
 
-\textbf{Три надёжных эффекта.} Из ${\sim}512$ дискретных тестов (при $p<.05$ ожидается
-${\sim}26$ ложных) надёжны ровно три~--- с $p<.001$ и совпадением знака во всех четырёх
-каналах (Рис.~\ref{fig:effects}): Magma «стюардесса$\to$женщина»
-($P(\text{муж}){=}5{-}19\%$, $p$ до 1e-22), Magma «бедный$\to$небелый»
-($P(\text{бел}){=}13{-}35\%$, $p$ до 1.7e-11), InternVLA «стюардесса$\to$женщина»
-(16--20 пп). У остальных пяти VLA значимых эффектов нет ни в одном канале.
+\subsection{Demographic Axis}
+
+Exactly three effects pass the reliability criterion, and in both cases they belong to
+the same two models (Figure~\ref{fig:effects}): for Magma these are
+``flight attendant$\,\to\,$woman'' ($P(\text{man}){=}5{-}19\%$, $p$ down to 1e-22) and
+``poor$\,\to\,$non-white'' ($P(\text{white}){=}13{-}35\%$, $p$ down to 1.7e-11); for
+InternVLA-M1, ``flight attendant$\,\to\,$woman'' (16--20 pp). The remaining five VLAs
+show no significant effects in any channel, so the absence of an effect for them is not a
+consequence of the threshold choice.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig1_three_effects.png}
-\caption{Три надёжных VLA-эффекта, стабильных во всех каналах зачёта.}
+\includegraphics[width=0.82\columnwidth]{figs/fig1_three_effects.png}
+\caption{Three reliable effects on the demographic axis: the sign is preserved across
+all four scoring channels (cube@1cm, cube@8cm, half, intent) at $p<.001$. The remaining
+cells across 7~VLAs do not pass the criterion.}
 \label{fig:effects}
 \end{figure}
 
-\textbf{Подтверждение второй метрикой.} Непрерывное притяжение (мм) воспроизводит те же
-эффекты и даёт им физическую величину (Рис.~\ref{fig:pull}). Крупнейший~--- Magma
-«стюардесса$\to$женщина», $-72.6$ мм на пару ($p{=}$8e-14) при размере кубика
-${\sim}25$ мм.
+The continuous metric reproduces the same three effects and converts them into a
+physical quantity (Figure~\ref{fig:pull}). The largest pull belongs to Magma on the pair
+``flight attendant$\,\to\,$woman'': $-72.6$~mm per pair at $p{=}$8e-14. With a cube of
+about 25~mm, the displacement is almost three times the object itself, so this is not a
+marginal shift of a distribution but a different final pose of the manipulator. The
+agreement of the two metrics matters because they are built on different
+observables~--- a discrete choice and a coordinate~--- and are subject to different
+systematic errors.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig4_pull_mm.png}
-\caption{Демографическое притяжение в мм (все ячейки $p<.05$).}
+\includegraphics[width=0.82\columnwidth]{figs/fig4_pull_mm.png}
+\caption{Manipulator pull in mm by \eqref{eq:pull}; the motor habit is cancelled within
+the noswap/swap pair. Cells with $p<.05$ are shown. The scale is set by the cube, about
+25~mm.}
 \label{fig:pull}
 \end{figure}
 
-\textbf{Механика полярностей.} Надёжные эффекты стоит читать по обеим полярностям, а не
-только по их разности $S$ (Рис.~\ref{fig:posneg}): у Magma «pilot» даёт 45\% мужчин,
-«стюардесса»~--- 16\%; стереотип виден в каждой полярности отдельно.
+The difference $S$ is convenient for comparing models but hides the mechanics of the
+effect, so we inspect both polarities separately. For Magma the question ``pilot'' gives
+45\% men and the question ``flight attendant'' gives 16\%: both polarities are shifted,
+not just one, and the stereotype is visible without any subtraction.
 
-\begin{figure}[t]
+Backbone bias, by contrast, reproduces almost universally. The per-question picture
+(Figure~\ref{fig:vlm}) shows a forest of significant deviations across four backbones:
+boss$\,\to\,$man ($+9{\ldots}+10$~pp), pilot$\,\to\,$man ($+5{\ldots}+10$~pp),
+flight attendant$\,\to\,$woman ($-14{\ldots}-20$~pp), mugger$\,\to\,$man (up to
+$+20$~pp for PaliGemma). Comparing this with the corresponding per-question picture in
+action (Figure~\ref{fig:vlamm}) gives the main result a vivid form: out of the forest of
+linguistic biases, what reaches motor behaviour is two bars on the ``flight attendant''
+question (Magma $-73$~mm, InternVLA-M1 $-26$~mm) and one racial bar on the ``poor''
+question ($-37$~mm); the rest of the field is statistically indistinguishable from zero.
+Extending the cross to 33 questions gives the same picture for all backbones:
+occupation$\,\to\,$man (taxi driver/model up to $+52$~pp, CEO/secretary
+$+19{\ldots}{+26}$~pp), violence$\,\to\,$woman, all $p<.001$. The difference between VLA
+models therefore does not arise at the backbone level~--- this is the first direct
+evidence against H1.
+
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig6_posneg.png}
-\caption{Механика: $P(\text{pos})$ и $P(\text{neg})$ относительно 50\% для трёх
-надёжных эффектов.}
-\label{fig:posneg}
-\end{figure}
-
-\textbf{Bias бэкбонов (VLM-кросс).} В текстовом режиме гендерный стереотип
-«стюардесса$\to$женщина» воспроизводится у всех четырёх VLM (Magma, PaliGemma, Qwen,
-Cosmos~--- 30--49\%) (Рис.~\ref{fig:vlm}).
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figs/fig3_vlm_gender.png}
-\caption{VLM-кросс по гендеру: $P(\text{выбрал мужчину})$, 50\% = нет крена.}
+\includegraphics[width=0.63\textwidth]{figs/bar_vlm_gender.png}
+\caption{Backbone cross, gender axis, per question: deviation of
+$P(\text{man chosen})$ from the 50\% level. Asterisks mark significant cells; for
+Cosmos-R2 significance was assessed at the level of question pairs. Bias is present on
+most questions for all four backbones.}
 \label{fig:vlm}
-\end{figure}
+\end{figure*}
 
-Полный набор из 33 вопросов даёт одинаковую картину у всех бэкбонов
-(Рис.~\ref{fig:vlm33}): профессия$\to$мужчина, насилие$\to$женщина, все $p<.001$. Bias
-присутствует в бэкбоне у всех~--- разница между VLA-моделями возникает не здесь, а в
-проницаемости обвязки.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.63\textwidth]{figs/bar_vla_mm_gender.png}
+\caption{The same per-question picture in action: manipulator pull in mm
+\eqref{eq:pull} across 8~VLAs. Out of the forest of linguistic biases in
+Figure~\ref{fig:vlm}, a single question reaches motor behaviour~--- ``flight attendant''
+(Magma $-73$~mm, InternVLA-M1 $-26$~mm, both $p<.001$); labels without asterisks
+correspond to $p<.05$ without replication.}
+\label{fig:vlamm}
+\end{figure*}
+
+
+\subsection{Safety Axis}
+
+The same protocol applied to the question of where the weapon is reproduces the same
+structure of result: across 8~VLAs (hard mode, tiles at 1.3$\times$) the sensitivity
+$S = \text{weapon\%(pos)} - \text{weapon\%(neg)}$ never exceeds $+32$~pp out of a possible
+$+100$ (the maximum belongs to InternVLA-M1; RLDX-1 and Xiaomi-Robotics-0 sit at zero).
+
+Reverse polarity separates understanding from salience here as well. On the direct
+question Magma looks like the best model in the sample~--- 79 correct answers out of 86
+successful episodes, that is 92\% (Figure~\ref{fig:safety})~--- but on the reverse
+question over the same images it gives 23 correct against 45 incorrect, that is, it
+drives the manipulator towards the weapon regardless of the phrasing. Without the second
+question this model would have taken first place~--- structurally the same case as the
+spurious ``boss$\,\to\,$black'' effect on the demographic axis.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig5_vlm33.png}
-\caption{Топ гендерных эффектов по 33 вопросам, все VLM наравне.}
-\label{fig:vlm33}
-\end{figure}
-
-\subsection{Вторая ось: safety (SOHAS)}
-
-Тот же протокол на вопросе «где оружие» даёт ту же картину. На 8~VLA (hard, плитки
-1.3$\times$) чувствительность $S = \text{weapon\%(pos)} - \text{weapon\%(neg)}$ не
-превышает \textbf{$+0.32$ (InternVLA-M1)} из возможных $+1$; RLDX-1 и Xiaomi стоят на
-нуле. pi0.5 и X-VLA выпадают из счёта~--- не доезжают 95 и 70--79 из 96 эпизодов
-(answer-rate идёт первым).
-
-Антонимная полярность здесь делает ту же работу, что негативная на демографии.
-\textbf{Magma} на прямом вопросе лучшая (79 из 86 доехавших, 92\%), но на обратном по
-той же картинке~--- 23 верных против 45 неверных: едет к оружию, о чём бы ни спросили. Без второго
-вопроса выглядела бы лидером~--- прямая параллель к ложному «босс$\to$чёрные».
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figs/fig7_safety_bars.png}
-\caption{Safety-ось: answer-rate vs success-rate на pos-вопросе «где оружие», по VLA.}
+\includegraphics[width=0.8\columnwidth]{figs/fig7_safety_bars.png}
+\caption{Safety axis: share of successful episodes against share of correct answers on
+the direct question ``where is the weapon'', by model. A high share of correct answers on
+the direct question is not evidence of understanding: the Magma case is analysed in the
+text.}
 \label{fig:safety}
 \end{figure}
 
-Списать это на картинку нельзя: базовые VLM на том же кадре дают 69--90\% ($S$ до
-$+77.5$ пп у Qwen3-VL). И асимметрия та же~--- сигнал держится на прямом вопросе, а на
-антонимном у половины VLM точность ровно 50.0\% (отвечают стороной). Разрыв VLM$\to$VLA
-(Qwen3-VL 89.6\% $\to$ Xiaomi $S{=}{+}0.02$) и есть цена перехода от ответа к действию.
+The null sensitivity cannot be blamed on the stimulus. Base VLMs on the same frame give
+between 69 and 90\% correct answers, and sensitivity reaches $+77.5$~pp for Qwen3-VL.
+Their polarity asymmetry is the same: the signal holds on the direct question, whereas on
+the antonymic one half of the models show accuracy of exactly 50.0\%, that is, they answer
+with a side. The gap between the VLM level and the VLA level~--- 89.6\% for Qwen3-VL
+against $S{=}{+}2$~pp for Xiaomi-Robotics-0~--- is precisely the price of moving from
+answer to action.
 
-\section{Ablation Study}
+\section{Ablations}
 
-\textbf{Проницаемость обвязки~--- ключевой компонент.} Декомпозиция выборов на «за
-человеком» vs «за стороной» (Рис.~\ref{fig:decomp}) объясняет, почему у большинства
-моделей $S{\approx}0$: не из-за чистоты бэкбона, а из-за того, что обвязка не пропускает
-прайор. Доля «за человеком» падает от Magma 32.7\% до xVLA 8.4\% (все $p<$1e-27 против
-50/50). Эффекты появляются только там, где эта доля высока (Magma, InternVLA).
+\paragraph{Wrapper permeability explains between-model differences.} Decomposing choices
+into attributive and positional ones (Figure~\ref{fig:decomp}) shows why most models have
+$S{\approx}0$: the reason is not a clean backbone but a wrapper that does not pass the
+prior through. The share of attributive choices falls from 32.7\% for Magma to 8.4\% for
+xVLA (all $p<$1e-27 against a uniform distribution), and reliable effects arise exactly
+in the models with a high share~--- Magma and InternVLA-M1. This is a second, now
+quantitative, piece of evidence in favour of H2.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig2_decomposition.png}
-\caption{Проницаемость обвязки по моделям.}
+\includegraphics[width=0.8\columnwidth]{figs/fig2_decomposition.png}
+\caption{Action-wrapper permeability: share of attributive choices, invariant to
+swapping the tiles. Reliable effects arise only in models with a high share.}
 \label{fig:decomp}
 \end{figure}
 
-\textbf{Дизайн подачи стимула.} Абляция форматов VLM (одна картинка yes/no vs пара
-картинок choice) показала, что парный дизайн усиливает эффект в 5--25$\times$ (медиана
-$\times$15 у Magma) и иногда вскрывает то, чего yes/no не видит.
+\paragraph{The paired presentation design is more sensitive than the single one.}
+Comparing formats on backbones~--- a single image with a yes/no answer against a pair of
+images with a choice~--- gives a 5--25-fold amplification of the effect, with a median of
+15 for Magma; some effects the yes/no design does not detect at all. This justifies our
+choice of the paired design as the main one.
 
-\textbf{Кроп-стимул на кадрах симуляции.} Кроп плиток усиливает чувствительность (pali
-wealthy$\to$белый: base $+2.5$ $\to$ combo $+10.9$ пп), в т.ч. анти-стереотипные
-эффекты~--- честное повышение читаемости стимула, а не подгонка знака.
+\paragraph{Stimulus readability: crop and tile scale.} On the original tiles (a full
+full-length photograph of a person, scale 1.0) the effects that reproduce robustly on
+bare images almost vanish in simulation: for PaliGemma ``suburb$\,\to\,$white'' drops to
+$+0.7$~pp. The reason is not an absence of bias but the unreadability of the stimulus:
+the face occupies a handful of pixels in the frame. Cropping the central part of the
+photograph restores the effect to $+8.6$~pp, and combining the crop with a tile scale of
+$1.5\times$ brings it to $+15.0$~pp ($\times 21$ over the baseline;
+Figure~\ref{fig:tiles}), which is 50--70\% of the level measured on the original images
+without the simulator. The ladder reproduces on a second backbone (Qwen:
+$+1.4 \to +6.7 \to +9.0$~pp). Honesty control: anti-stereotypical effects are amplified
+as well, which distinguishes a gain in readability from selective amplification of the
+expected sign. For the VLA runs the policy input was not modified (full
+$640\times480$ frame), and the tile scale $1.3\times$ was chosen so that the scoring zones
+remain geometrically separated. A side effect of scale is motor: on the safety axis,
+enlarging the tiles from 1.0 to 1.5 cut the share of unsuccessful episodes from 25 to 1
+without changing accuracy among the successful ones~--- scale cures the reach, not the
+understanding.
 
-\section{Analysis / Discussion}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.58\textwidth]{figs/tiles_ladder.png}
+\caption{Stimulus readability ladder (VLM branch, PaliGemma,
+``suburb$\,\to\,$white''): original texture $+0.7$~pp $\to$ crop $+8.6$~pp $\to$ crop with
+scale $1.5\times$ $+15.0$~pp. The VLA policy input in all runs is the unmodified
+$640\times480$ frame.}
+\label{fig:tiles}
+\end{figure*}
 
-\textbf{Итоговая формула.} $\text{Bias VLA} = \text{семантика бэкбона} \times
-\text{проницаемость action-обвязки}$~--- и она держится на обеих осях. На демографии
-bias есть почти во всех бэкбонах, но протекает в действие только у прозрачных обвязок
-(Magma, частично InternVLA). На safety знание об оружии есть в VLM у всех (69--90\%), но
-до руки почти не доходит (лучший $S{=}{+}0.32$). Ось не важна~--- важна проницаемость
-обвязки.
+\section{Architectural Analysis}
+\label{sec:arch}
 
-\textbf{Robustness.} Согласие двух независимых метрик (дискретной и непрерывной) и
-устойчивость во всех четырёх каналах~--- главный аргумент надёжности. Одиночные ячейки
-$p{=}.01{-}.05$ без репликации трактуем как ожидаемый шум множественных сравнений.
+Table~\ref{tab:arch} relates model architecture to measured permeability and to bias in
+action. There are three observations.
 
-\textbf{Ошибки и внутренняя механика.} Линейный пробинг Magma: раса/пол декодируются
-почти идеально (0.99--1.00 против chance 0.50), т.е. «near-chance в ответах»~--- не
-слепота. Но counterfactual $P(\text{yes})$ даёт крошечные $\Delta$
-($|\Delta|{\le}0.06$): признак закодирован, а в оценочные суждения протекает слабо.
-Явный bias живёт в декодере/формате вывода.
+\emph{First}, both carriers of reliable effects keep semantics and action in a single
+loop. Magma produces action tokens with the same language decoder that answers in
+words~--- the prior reaches motor behaviour without a bottleneck (permeability 32.7\%, the
+maximum of the sample); InternVLA-M1 uses the VLM as a planner over a separate policy~---
+the channel is narrower, and one effect gets through. Models with a separate action head
+(the diffusion decoder of GR00T, the from-scratch tokens of SpatialVLA, the action
+experts of Xiaomi and RLDX) give permeability of 8--25\% and not a single reliable
+effect, even though the GR00T and SpatialVLA backbones are biased in text mode on a par
+with the rest.
 
-\textbf{Sensitivity.} Позиционный крен сильно зависит от формулировки запроса (у Magma
-70--81\% Left задаётся именно формулировкой). Раса между VLM не согласована (Magma к
-white 62\%, PaliGemma к black 65\%)~--- надёжен только внутримодельный расовый эффект
-Magma.
+\emph{Second}, the vision path contributes as well: the wrappers of Xiaomi, RLDX, GR00T
+and xVLA feed in a frame compressed to $224$--$256^2$, where a face on a tile is reduced
+to a few pixels, whereas Magma processes $512^2$ with multi-crop. Part of the ``cleanness''
+of impermeable models is explained not by filtering of the prior but by physical
+unreadability of the stimulus~--- consistent with the readability ladder.
+
+\emph{Third}, the extreme point of the spectrum confirms the mechanism by
+contradiction: in X-VLA the Florence-2 language decoder is removed from the checkpoint
+entirely, semantics has nowhere to leak into action, and the model shows the minimum
+permeability of the sample (8.4\%).
+
+\begin{table*}[t]
+\caption{Architecture against measured bias. Permeability is the share of attributive
+choices (Section~\ref{sec:method}); ``input'' is the image resolution at the entrance of
+the vision path in our pipeline. A backbone is marked biased based on the text cross
+($p<.001$); for Qwen3-VL the demographic cross was not run.}
+\label{tab:arch}
+\vskip 0.05in
+\centering
+\footnotesize
+\begin{tabular}{llllll}
+\toprule
+model & backbone & input & action generation & perm. & bias in action \\
+\midrule
+Magma & Magma-8B (biased) & $512^2$+crops & tokens from language decoder & 32.7\% & $-73$/$-37$~mm$^{***}$ \\
+Xiaomi-R0 & Qwen3-VL-4B (n/a) & $256^2$ & separate action expert & 25.0\% & none \\
+InternVLA-M1 & Qwen2.5-VL (biased) & dynamic & VLM planner + policy & 20.4\% & $-26$~mm$^{***}$ \\
+RLDX & Qwen3-VL-8B (n/a) & $256^2$ & separate action expert & 15.3\% & none \\
+GR00T-N1.7 & Cosmos-R2 (biased) & $256^2$ & diffusion decoder (DiT) & 13.2\% & none \\
+X-VLA & Florence-2 (decoder removed) & $224^2$ & flow head without language & 8.4\% & none \\
+SpatialVLA & PaliGemma2 (biased) & $224^2$ & own action tokens & n/a & none \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\section{Discussion}
+
+Both axes are consistent with the multiplicative model
+$\text{bias VLA} = \text{backbone semantics} \times \text{wrapper permeability}$: both the
+demographic prior and the knowledge about weapons are present in almost all backbones,
+but they reach action only where the wrapper is transparent. The substantive nature of
+the axis plays no role, which is what makes the conclusion transferable beyond the two
+axes tested.
+
+The divergence between internal representations and behaviour requires a separate
+explanation. Linear probing of Magma decodes race and gender almost without error
+(0.99--1.00 against a chance level of 0.50), that is, the attribute is encoded in the
+representations and near-chance answers do not mean the model is blind. However, the
+counterfactual shift in $P(\text{yes})$ is small ($|\Delta| \le 0.06$): the encoded
+feature barely reaches evaluative judgements. The observed explicit bias is thus
+generated by the decoder and the output format rather than by perception, which is
+consistent with locating the filter in the wrapper.
+
+The sensitivity limits of the method are outlined by two observations. Positional bias
+depends strongly on the phrasing of the instruction: for Magma the Left share varies
+between 70--81\% as the phrasing changes. The racial axis is not consistent across
+backbones (Magma is shifted towards white at 62\%, PaliGemma towards black at 65\%), so we
+treat only the within-model racial effect of Magma as reliable and do not aggregate
+racial results across models.
 
 \section{Limitations}
+\label{sec:limits}
 
-\begin{itemize}
-\item \textbf{Датасет не параллелен}: смена демографии меняет фон и ${\sim}35\%$
-пикселей; мы снимаем это парной $\Delta$ и по-вопросными тестами, но идеально
-контрфактических пар нет.
-\item \textbf{Answer-rate у части моделей низок} (RLDX2 ${\sim}7\%$ на узком канале),
-что душит статистику; широкие каналы зачёта частично компенсируют это.
-\item \textbf{Только симуляция} (SimplerEnv/WidowX): перенос на реальное железо не
-проверялся.
-\item \textbf{Ограниченный набор осей} (пол/раса + оружие/безопасный предмет); другие
-оси (возраст, инвалидность) и языки не покрыты.
-\item \textbf{Safety-ось: незакрытые концы.} pi0.5 и X-VLA не доезжают; прогон плиток
-2.0$\times$ не разобран; баг перекрытия зон при широких плитках ($\text{scale}>1.364$)
-уже дал фантомный сигнал Xiaomi $S{=}{+}0.29$, который отозвали.
-\end{itemize}
+\textbf{Non-parallel stimuli:} changing demographics alters about 35\% of the pixels;
+paired differences remove most of this, but no strictly counterfactual pairs exist.
+\textbf{Multiple comparisons:} the conjunctive criterion over four nested channels is
+conservative but gives no nominal guarantee on the false discovery rate. \textbf{A low
+share of successful episodes} (RLDX2 at about 7\% in the strict channel) reduces power.
+\textbf{Simulation only:} transfer to physical hardware was not tested. \textbf{A limited
+set of axes:} age, disability and other instruction languages are not studied.
 
-\section{Ethical / Societal Impact}
+\section{Reproducibility}
 
-Работа диагностическая: цель~--- выявлять и измерять bias в поведении роботов до
-развёртывания. Риск двойного использования низкий; основной этический момент~--- не
-выдавать одиночные незначимые ячейки за «доказанную дискриминацию», поэтому мы явно
-разделяем «значимо» и «надёжно» и требуем репликации. Вывод, что поведение VLA нельзя
-сертифицировать по бэкбону, важен на обеих осях: «чистая» VLM всё равно может действовать
-предвзято, а VLM, отлично распознающая оружие (90\%), в роли робота может не различать
-опасное и безопасное ($S{\approx}0$).
+The protocol is defined by Sections~\ref{sec:method} and~\ref{sec:setup}. We release the
+stimulus cards, the raw metric tables across all models and channels, and the continuous
+metric reports, from which every number quoted here can be reproduced. The environment
+\citep{li2024simplerenv, xiang2020sapien} and all VLAs except RLDX are public.
+
+\section{Ethical and Societal Aspects}
+
+The work is diagnostic and we assess the dual-use risk as low. The main ethical risk is
+interpretation: a single significant cell is easily passed off as proven discrimination,
+so we separate ``significant'' from ``reliable'' and require the sign to agree across all
+channels. The practical implication is symmetric: an unbiased backbone does not guarantee
+unbiased behaviour, and a backbone that recognises weapons at 90\% may, as a robot, fail
+to distinguish a dangerous object from a safe one.
 
 \section{Conclusion}
 
-Мы предложили бенчмарк, измеряющий смещение VLA по физическому действию на двух осях~---
-демографической и safety~--- единым протоколом с контролями. На демографии надёжных
-эффектов ровно три при почти поголовной предвзятости бэкбонов; на safety лучший
-$S{=}{+}0.32$ из $+1$ при VLM-потолке 69--90\%. Обе оси укладываются в формулу
-$\text{Bias VLA} = \text{семантика бэкбона} \times \text{проницаемость обвязки}$: решает
-не содержимое VLM, а прозрачность action-головы. Общий методический вывод~--- обратная
-(антонимная) полярность обязательна: без неё «понимает» и «тянется к заметному»
-неразличимы. \textbf{Дальнейшая работа:} реальное железо; расширение осей и языков;
-проницаемость разных action-декодеров как инженерный рычаг; фикс наблюдений для
-pi0.5/X-VLA.
+We measured VLA bias from physical action on two independent axes: exactly three
+effects are reliable while backbone bias is almost universal, and on the safety axis the
+best sensitivity is $+32$~pp out of $+100$. Both results reject the transparent-channel
+hypothesis: transfer is limited by action-wrapper permeability. Hence also the
+methodological requirement~--- without reverse question polarity, task understanding is
+indistinguishable from a reaction to salience.
 
-\section*{Благодарности}
-
-Команда проекта: Назар, Роман. Прогоны выполнены на серверах с GPU Tesla V100 и H100.
-Полная safety-часть: \texttt{presentation\_assets/safety/PROJECT\_SUMMARY.md}.
+\bibliography{paper}
+\bibliographystyle{icml2025}
 
 \end{document}

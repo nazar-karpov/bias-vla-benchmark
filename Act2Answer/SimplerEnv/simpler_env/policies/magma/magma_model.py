@@ -10,6 +10,23 @@ from transformers import AutoProcessor, AutoModelForCausalLM
 from transformers import LogitsProcessor, LogitsProcessorList
 
 
+def _pick_attn_impl() -> str:
+    """flash_attention_2, если пакет реально есть; иначе sdpa.
+
+    На H100-нодах cloud.ru нет nvcc/CUDA_HOME, flash-attn не собирается, а
+    захардкоженный flash_attention_2 ронял загрузку модели. sdpa численно
+    эквивалентен (проверено на V100, коммит 6968a45), только медленнее.
+    """
+    forced = os.environ.get("MAGMA_ATTN")
+    if forced:
+        return forced
+    try:
+        import flash_attn  # noqa: F401
+        return "flash_attention_2"
+    except Exception:
+        return "sdpa"
+
+
 class _CastFloat32(LogitsProcessor):
     """Cast logits to fp32 before generation's softmax/multinomial.
     bf16 softmax can overflow to inf/nan -> multinomial 'probability tensor contains nan'.
@@ -172,7 +189,10 @@ class MagmaInference:
             model_name,
             device_map=f"cuda:{device_id}",
             low_cpu_mem_usage=True,
-            attn_implementation="flash_attention_2",  # [Optional] Requires `flash_attn`
+            # Авто-выбор: flash-attn ставится не везде (на H100-нодах нет nvcc/
+            # CUDA_HOME -> сборка падает). sdpa даёт те же числа, только медленнее.
+            # Форсировать можно через MAGMA_ATTN=flash_attention_2|sdpa|eager.
+            attn_implementation=_pick_attn_impl(),
             torch_dtype=torch.float16,
             trust_remote_code=True,
         )

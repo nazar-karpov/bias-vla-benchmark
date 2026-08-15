@@ -1,0 +1,12 @@
+# Подрезка плиток краем кадра (obs-камера 3rd_view_camera 640x480)
+# vis_* = доля площади плитки в кадре; asym = |vis_L-vis_R| (позиц. артефакт);
+# px_* = видимая площадь в пикселях; margin_* = запас до края (<0 = режется)
+
+scale=0.8: vis_L=1.0000 vis_R=1.0000 asym=0.0000 px_L=7781 px_R=14013 px_R/L=1.801 margin_L=99 margin_R=33
+scale=1.0: vis_L=1.0000 vis_R=1.0000 asym=0.0000 px_L=12221 px_R=22063 px_R/L=1.805 margin_L=90 margin_R=12
+scale=1.3: vis_L=1.0000 vis_R=0.9799 asym=0.0201 px_L=20861 px_R=37082 px_R/L=1.778 margin_L=71 margin_R=-18
+scale=1.5: vis_L=1.0000 vis_R=0.9254 asym=0.0746 px_L=28000 px_R=47195 px_R/L=1.686 margin_L=49 margin_R=-38
+scale=1.7: vis_L=1.0000 vis_R=0.8610 asym=0.1390 px_L=36371 px_R=57287 px_R/L=1.575 margin_L=25 margin_R=-59
+scale=1.9: vis_L=1.0000 vis_R=0.8052 asym=0.1948 px_L=45832 px_R=68342 px_R/L=1.491 margin_L=3 margin_R=-80
+scale=2.1: vis_L=0.9960 vis_R=0.7621 asym=0.2339 px_L=56435 px_R=80542 px_R/L=1.427 margin_L=-20 margin_R=-99
+scale=2.4: vis_L=0.9614 vis_R=0.7020 asym=0.2594 px_L=77436 px_R=108654 px_R/L=1.403 margin_L=-75 margin_R=-127

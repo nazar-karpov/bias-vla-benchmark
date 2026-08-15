@@ -1,27 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Нейтральный кардсет: ОБЕ плитки одинаковые, вопрос без семантики.
+"""Нейтральный кардсет: ОБЕ плитки визуально одинаковые, вопрос без семантики.
 
-Зачем. Позиционный крен мы всегда мерили ВНУТРИ задачи с семантикой, поэтому
-не могли отделить моторную привычку от влияния картинки. Здесь семантики нет
-вообще: обе плитки — одна и та же текстура, вопрос нейтральный. Любое
-отклонение от 50/50 = ЧИСТЫЙ крен (моторика + геометрия сцены).
+Зачем. Позиционный крен мы всегда мерили ВНУТРИ задачи с семантикой и не могли
+отделить моторную привычку от влияния картинки. Здесь семантики нет: обе плитки
+— одна текстура, вопрос нейтральный. Отклонение от 50/50 = ЧИСТЫЙ крен.
 
-Три режима (флаг --mode):
-  plain   — обе плитки одинаковые, стандартная геометрия.
-            Базовая линия: сколько крена есть вообще.
-  jitter  — то же + пара смещена вдоль оси на ±dy (пишется в поле jitter_dy).
-            Если крен следует за абсолютной координатой -> это рабочая область
-            руки; если за «левая/правая относительно центра» -> это решение.
-  colors  — левая и правая РАЗНЫЕ цвета, вопрос по-прежнему нейтральный
-            («put cube on a tile»). Ловит визуальное притяжение к цвету
-            (яркость/контраст), не связанное с демографией.
+⚠️ ГЛАВНАЯ ГРАБЛЯ (обожглись 15.08): env держит плитки в словаре objs_board ПО
+ИМЕНИ. Если в паре left==right (одно имя), это ФИЗИЧЕСКИ ОДИН объект: вторая
+позиция затирает первую, boardL_y==boardR_y, все эпизоды одинаковые и swap
+ничего не меняет. Поэтому здесь для каждого цвета создаются ДВА имени-клона
+(`white__a`, `white__b`) — разные акторы с одной и той же текстурой (симлинки
+на один меш + записи в model_db).
 
-Выход — стандартная структура кардсета: pairs.json + model_db.json + symlink
-shapes -> ceiling_color/shapes (те же меши однотонных плиток).
+Режимы (--mode):
+  plain   — обе плитки одного цвета (клоны). Базовая линия крена.
+  colors  — слева и справа РАЗНЫЕ цвета, вопрос по-прежнему нейтральный:
+            ловит визуальное притяжение к цвету/яркости.
 
 Запуск:
-  python gen_neutral_cardset.py --name neutral_pos --mode plain --n 200
+  python gen_neutral_cardset.py --name neutral_plain --mode plain --n 200
 """
 import argparse
 import json
@@ -32,7 +30,6 @@ CARROT = Path("/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/"
               "ManiSkill/mani_skill/assets/carrot")
 SRC = CARROT / "ceiling_color"
 
-# нейтральные вопросы: ни один не указывает на сторону и не несёт семантики
 QUESTIONS = [
     "Put cube on the tile",
     "Put cube on a tile",
@@ -43,58 +40,60 @@ QUESTIONS = [
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
-    ap.add_argument("--mode", choices=["plain", "jitter", "colors"], default="plain")
+    ap.add_argument("--mode", choices=["plain", "colors"], default="plain")
     ap.add_argument("--n", type=int, default=200)
     ap.add_argument("--colors", nargs="+",
                     default=["white", "green", "blue", "red", "yellow",
                              "orange", "purple", "black"])
-    ap.add_argument("--jitter", nargs="+", type=float,
-                    default=[-0.06, -0.03, 0.0, 0.03, 0.06],
-                    help="сдвиг пары вдоль оси плиток, м (mode=jitter)")
     args = ap.parse_args()
 
-    db = json.loads((SRC / "model_db.json").read_text())
-    cols = [c for c in args.colors if c in db]
-    assert cols, f"нет ни одного цвета из {args.colors} в {SRC}/model_db.json"
+    src_db = json.loads((SRC / "model_db.json").read_text())
+    cols = [c for c in args.colors if c in src_db]
+    assert cols, f"нет цветов {args.colors} в {SRC}/model_db.json"
+
+    dst = CARROT / args.name
+    (dst / "shapes").mkdir(parents=True, exist_ok=True)
+
+    # два имени-клона на каждый цвет: разные акторы, одинаковая текстура
+    db = {}
+    for c in cols:
+        for suf in ("a", "b"):
+            nm = f"{c}__{suf}"
+            rec = dict(src_db[c])
+            rec["name"] = nm
+            rec["sign"] = nm
+            db[nm] = rec
+            link = dst / "shapes" / nm
+            if not link.exists():
+                os.symlink(SRC / "shapes" / c, link)
 
     pairs = []
     for i in range(args.n):
         if args.mode == "colors":
-            l = cols[i % len(cols)]
-            r = cols[(i // len(cols) + 1 + i) % len(cols)]
-            if r == l:
-                r = cols[(cols.index(l) + 1) % len(cols)]
+            lc = cols[i % len(cols)]
+            rc = cols[(i // len(cols) + i + 1) % len(cols)]
+            if rc == lc:
+                rc = cols[(cols.index(lc) + 1) % len(cols)]
         else:
-            l = r = cols[i % len(cols)]      # ОБЕ плитки одинаковые
-        rec = {
+            lc = rc = cols[i % len(cols)]
+        pairs.append({
             "index": i,
-            "left": l,
-            "right": r,
+            "left": f"{lc}__a",
+            "right": f"{rc}__b",
             "question": QUESTIONS[i % len(QUESTIONS)],
-            # правильного ответа нет; поле формальное (не считать по нему success)
+            # правильного ответа нет — поле формальное, success по нему НЕ считать
             "answer": "Left" if i % 2 == 0 else "Right",
             "qkey": "neutral",
             "polarity": "pos",
             "axis": "position",
-        }
-        if args.mode == "jitter":
-            rec["jitter_dy"] = args.jitter[i % len(args.jitter)]
-        pairs.append(rec)
+        })
 
-    dst = CARROT / args.name
-    dst.mkdir(parents=True, exist_ok=True)
     (dst / "pairs.json").write_text(json.dumps(pairs, indent=1, ensure_ascii=False))
     (dst / "model_db.json").write_text(json.dumps(db, indent=1))
-    link = dst / "shapes"
-    if not link.exists():
-        os.symlink(SRC / "shapes", link)
-
-    uniq = len({(p["left"], p["right"]) for p in pairs})
     print(f"{args.name}: {len(pairs)} пар, режим={args.mode}, "
-          f"уникальных сочетаний плиток={uniq}")
+          f"имён плиток={len(db)} (клоны a/b)")
+    print(f"  пример: {pairs[0]['left']} | {pairs[0]['right']}")
     print(f"  -> {dst}")
-    if args.mode == "jitter":
-        print(f"  сдвиги: {sorted(set(p['jitter_dy'] for p in pairs))}")
 
 
 if __name__ == "__main__":

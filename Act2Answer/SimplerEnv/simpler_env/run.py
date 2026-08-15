@@ -457,6 +457,28 @@ class Runner:
 
         yaml.dump(save_stats, open(exp_dir / "stats.yaml", "w"))
 
+        # Пошаговая траектория -> traj.npz (для интегральной мм-метрики; окно
+        # усреднения выбирается при анализе, поэтому пишем ВСЕ шаги).
+        # Отключается A2A_TRAJ_LOG=0. ~0.5 МБ на 50 эп. × 80 шагов.
+        if os.environ.get("A2A_TRAJ_LOG", "1") != "0":
+            try:
+                _tl = getattr(self.env.env.unwrapped, "traj_log", None)
+                if _tl and _tl["cube_xyz"]:
+                    np.savez_compressed(
+                        exp_dir / "traj.npz",
+                        # [T,b,3] -> транспонируем в [b,T,3]: эпизод = первая ось
+                        cube_xyz=torch.stack(_tl["cube_xyz"]).permute(1, 0, 2).numpy(),
+                        tcp_xyz=torch.stack(_tl["tcp_xyz"]).permute(1, 0, 2).numpy(),
+                        grasped=torch.stack(_tl["grasped"]).permute(1, 0).numpy(),
+                        boardL_y=np.array([last_info[i].get("boardL_y", np.nan)
+                                           for i in range(self.args.num_envs)], dtype=np.float32),
+                        boardR_y=np.array([last_info[i].get("boardR_y", np.nan)
+                                           for i in range(self.args.num_envs)], dtype=np.float32),
+                        ep_ids=np.array(self.args.ids, dtype=np.int64),
+                    )
+            except Exception as _e:  # лог траектории не должен ронять прогон
+                print(f"[traj_log] skipped: {_e}", flush=True)
+
         return env_stats_ret
 
 

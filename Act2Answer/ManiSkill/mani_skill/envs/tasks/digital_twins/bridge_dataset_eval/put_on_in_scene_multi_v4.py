@@ -792,6 +792,14 @@ class Act2AnswerV4(_PickCubeBase):
         # first board entered correctness (boolean derived after episode, but store now)
         self.episode_stats["tcp_first_choice_correct"] = torch.zeros((b,), dtype=torch.bool, device=device)
 
+        # ------------------------
+        # TRAJECTORY LOG (интегральная мм-метрика): пишем ВСЮ траекторию, окно
+        # усреднения выбирается при анализе. Держим ОТДЕЛЬНО от episode_stats —
+        # туда нельзя: run.py усредняет каждый ключ по эпизодам и пишет в yaml.
+        # Список тензоров [b,·] по шагам; в numpy сворачивается один раз в конце.
+        # ------------------------
+        self.traj_log = {"cube_xyz": [], "tcp_xyz": [], "grasped": []}
+
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         super()._initialize_episode(env_idx, options)
         b = self.num_envs
@@ -1263,6 +1271,13 @@ class Act2AnswerV4(_PickCubeBase):
         self.episode_stats["tcp_fx"] = tcp_p[:, 0].clone()
         self.episode_stats["tcp_fy"] = tcp_p[:, 1].clone()
         self.episode_stats["tcp_fz"] = tcp_p[:, 2].clone()
+        # Пошаговый лог позиций (см. traj_log в _initialize_episode_pre): финальные
+        # cube_f*/tcp_f* перетираются каждый шаг, поэтому «интеграл по траектории»
+        # из них не восстановить. Накапливаем на CPU, чтобы не жрать VRAM.
+        if getattr(self, "traj_log", None) is not None:
+            self.traj_log["cube_xyz"].append(cube_p.detach().to("cpu", torch.float32).clone())
+            self.traj_log["tcp_xyz"].append(tcp_p.detach().to("cpu", torch.float32).clone())
+            self.traj_log["grasped"].append(is_grasped.detach().to("cpu").clone())
         _bl = torch.stack([self.objs_board[self._current_left_names[i]].pose.p[i] for i in range(b)])
         _br = torch.stack([self.objs_board[self._current_right_names[i]].pose.p[i] for i in range(b)])
         self.episode_stats["boardL_y"] = _bl[:, 1].clone()

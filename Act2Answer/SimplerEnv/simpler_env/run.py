@@ -398,7 +398,12 @@ class Runner:
         exp_dir = Path(self.glob_dir) / f"vis_{epoch}_{obj_set}"
         exp_dir.mkdir(parents=True, exist_ok=True)
 
-        for i in range(self.args.num_envs):
+        # Запись видео — чистый CPU-расход ПОСЛЕ симуляции: апскейл каждого кадра,
+        # наложение текста и кодирование N роликов (400 шт. ≈ 112 МБ, минуты на
+        # прогон), GPU в это время простаивает. Для метрик видео не нужны — всё
+        # считается из stats.yaml / traj.npz. Отключается A2A_SAVE_VIDEO=0.
+        _n_video = self.args.num_envs if os.environ.get("A2A_SAVE_VIDEO", "1") != "0" else 0
+        for i in range(_n_video):
             images = datas[i]["image"]
             infos = datas[i]["info"]
             assert len(images) == len(infos) + 1

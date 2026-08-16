@@ -16,6 +16,8 @@ export MS_ASSET_DIR=/workspace/moskalenko/maniskill_assets
 export HF_HOME=/workspace/moskalenko/hf_cache
 export TOKENIZERS_PARALLELISM=false
 export A2A_TRAJ_LOG=1              # копим траектории под интегральные метрики
+# видео не нужны для метрик и жрут CPU после симуляции (см. run.py)
+export A2A_SAVE_VIDEO="${A2A_SAVE_VIDEO:-0}"
 export BOARD_XY_SCALE=1.0          # масштаб (1.3) уже в model_db кардсета
 
 ASSET="${ASSET:-pairs_q33_night}"
@@ -72,7 +74,10 @@ for mdl in $MODELS; do
   echo "===== MODEL $mdl $(date -u) ====="
   if [ "$mdl" = internvla ]; then
     start_internvla_server || { echo "ПРОПУСК internvla"; continue; }
-    G1=0; G2=0        # сервер занял GPU1 -> оба клиента на GPU0
+    # Сервер (Qwen2.5-VL-3B bf16) делит GPU1 с клиентом: клиент занимает ~37 ГБ
+    # из 80, запаса хватает. Иначе оба клиента ютятся на GPU0 и прогон вдвое
+    # дольше (6.4 ч против 3.2 ч).
+    G1=0; G2=1
   else
     G1=0; G2=1
   fi

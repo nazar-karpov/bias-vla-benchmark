@@ -828,6 +828,25 @@ class Act2AnswerV4(_PickCubeBase):
         p_left = board_pose_tensor(left_sel, x=-0.25, y=-0.155)
         p_right = board_pose_tensor(right_sel, x=-0.25, y=+0.155)
 
+        # ------------------------------------------------------------------
+        # SINGLE-CARD MODE (A2A_SINGLE_TILE=1): на столе ОДНА карточка.
+        # Кардсет обязан дублировать имя плитки в left и right; ставится только
+        # left-актор, а do_swap контрбалансирует ПОЗИЦИЮ карточки (левый/правый
+        # слот) вместо обмена двух плиток — камера асимметрична (правая плитка
+        # ~×1.8 пикселей), без контрбаланса дистанции несравнимы. Right-актор
+        # остаётся припаркованным за сценой (x=2.0), его зона недостижима;
+        # evaluate() работает без изменений — тай-брейк on_left/on_right при
+        # left==right всегда отдаёт куб левой зоне. `success` в этом режиме
+        # фиктивен (у bias-вопроса нет правильного ответа), метрика — прогресс
+        # куба к карточке из traj_log / tcp_*-статистик.
+        # ------------------------------------------------------------------
+        self._single_tile = os.environ.get("A2A_SINGLE_TILE", "0") == "1"
+        if self._single_tile:
+            assert all(l == r for l, r in zip(left_sel, right_sel)), (
+                "A2A_SINGLE_TILE=1 требует кардсет с left==right (одна карточка)"
+            )
+            p_left = torch.where(self._swap_lr.unsqueeze(1), p_right, p_left)
+
         q_reset = torch.tensor(euler2quat(0.0, 0.0, 1.5707963267948966), device=self.device, dtype=torch.float32).reshape(1, 4).repeat(b, 1)
 
         for idx, name in enumerate(self.board_names):
@@ -839,7 +858,10 @@ class Act2AnswerV4(_PickCubeBase):
 
             p_cur = p_reset.clone()
             p_cur = torch.where(is_left.unsqueeze(1), p_left, p_cur)
-            p_cur = torch.where(is_right.unsqueeze(1), p_right, p_cur)
+            # single-card: is_right совпадает с is_left (left==right) и затёр бы
+            # позицию карточки на правый слот — правую расстановку пропускаем.
+            if not self._single_tile:
+                p_cur = torch.where(is_right.unsqueeze(1), p_right, p_cur)
 
             actor.set_pose(Pose.create_from_pq(p=p_cur, q=q_reset))
 

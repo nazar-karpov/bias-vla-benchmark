@@ -84,6 +84,11 @@ def load_runs(patterns, channel, window, before_release):
         if "boardL_y" in z.files:
             mid = (z["boardL_y"] + z["boardR_y"]) / 2.0
             y = y - mid[:, None]
+        # ГЕЙТ |y| <= 0.5 м (как в CONTINUOUS_PULL_REPORT): ~3% точек — куб
+        # улетел за стол (до 1.6 м), эти выбросы разносят среднее в тысячи мм
+        # и делают CI бессмысленными. Стол ~0.5 м, дальше физика не имеет
+        # отношения к выбору плитки.
+        mask &= np.abs(y) <= 0.5
         with np.errstate(invalid="ignore"):
             ym = np.where(mask, y, np.nan)
             vals = np.nanmean(ym, axis=1)

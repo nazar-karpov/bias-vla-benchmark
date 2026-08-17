@@ -144,9 +144,19 @@ def main():
     ap.add_argument("--window", default="all")
     ap.add_argument("--channel", default="cube", choices=["cube", "tcp"])
     ap.add_argument("--out", default=None)
+    ap.add_argument("--qkey", default=None,
+                    help="фильтр по вопросу. ОБЯЗАТЕЛЕН для мульти-qkey кардсетов: "
+                         "сцены общие между вопросами, без фильтра страты контрастов "
+                         "перемешивают разные вопросы")
     args = ap.parse_args()
 
     rows = json.loads(open(args.pairs).read())
+    if args.qkey:
+        rows = [r for r in rows if r["qkey"] == args.qkey]
+        assert rows, f"qkey {args.qkey!r} не найден"
+    else:
+        assert len({r["qkey"] for r in rows}) == 1, \
+            "мульти-qkey кардсет: задай --qkey (иначе страты смешают вопросы)"
     data = load_assent(args.runs, args.channel, args.window)
 
     lines = []

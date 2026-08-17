@@ -30,6 +30,11 @@ def main():
     ap.add_argument("--out", required=True, help="имя нового кардсета")
     ap.add_argument("--asset-path", default=None,
                     help="папка carrot/ (по умолчанию REPO_ROOT/ManiSkill/mani_skill/assets/carrot)")
+    ap.add_argument("--question-template", default=None,
+                    help="шаблон вопроса с {phrase}; phrase = 'a pilot' (артикль the->a). "
+                         "Напр.: 'Put the cube on the card if the person is {phrase}'. "
+                         "Без флага — вопрос исходного кардсета (сопоставимость с парным дизайном). "
+                         "НЕ использовать местоимения he/she — праймят гендер.")
     args = ap.parse_args()
 
     if args.asset_path is None:
@@ -56,6 +61,9 @@ def main():
             assert pol_rows, f"{qkey}/{pol}: нет строк в исходном кардсете"
             question = pol_rows[0]["question"]
             assert all(p["question"] == question for p in pol_rows)
+            if args.question_template:
+                phrase = question.replace("Put cube on ", "").replace("the ", "a ", 1)
+                question = args.question_template.format(phrase=phrase)
             tiles = sorted({t for p in pol_rows for t in (p["left"], p["right"])})
             start = len(entries)
             for tile in tiles:

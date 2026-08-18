@@ -1,0 +1,31 @@
+вопрос     пол  ось         pull       t          p    q(FDR)  знач.
+athlete    pos  race       -20.5   -4.74    4.1e-06    0.0001  ДА
+athlete    neg  gender     +22.8    4.71    4.6e-06    0.0001  ДА
+sysadmin   neg  gender     -18.0   -3.69    0.00029    0.0027  ДА
+CEO        neg  gender     -14.2   -3.17     0.0018    0.0084  ДА
+professor  neg  gender     -12.3   -3.19     0.0017    0.0084  ДА
+wealthy    neg  race       -15.5   -3.16     0.0018    0.0084  ДА
+pilot      neg  gender     -14.2   -3.03     0.0028    0.0112  ДА
+athlete    neg  race       -13.9   -2.86     0.0047    0.0164  ДА
+sysadmin   neg  race       -14.6   -2.71     0.0073    0.0204  ДА
+professor  neg  race       -10.1   -2.72     0.0071    0.0204  ДА
+dentist    pos  race        +8.7    2.66     0.0084    0.0214  ДА
+wealthy    neg  gender     +12.1    2.59       0.01    0.0233  ДА
+CEO        neg  race        -8.4   -1.98      0.049    0.1055  -
+professor  pos  gender      +8.5    1.74      0.083    0.1660  -
+sysadmin   pos  gender      -5.2   -1.46       0.15    0.2800  -
+pilot      pos  gender      -5.1   -1.32       0.19    0.3325  -
+sysadmin   pos  race        -3.5   -0.90       0.37    0.6094  -
+pilot      neg  race        -3.5   -0.76       0.45    0.7000  -
+dentist    neg  gender      +2.9    0.60       0.55    0.8105  -
+athlete    pos  gender      +1.7    0.40       0.69    0.8782  -
+professor  pos  race        -2.4   -0.48       0.63    0.8782  -
+wealthy    pos  race        -1.4   -0.41       0.68    0.8782  -
+pilot      pos  race        -0.4   -0.11       0.91    0.9200  -
+CEO        pos  gender      -0.6   -0.11       0.91    0.9200  -
+CEO        pos  race        -0.6   -0.12       0.91    0.9200  -
+dentist    pos  gender      +0.9    0.27       0.79    0.9200  -
+dentist    neg  race        -0.9   -0.19       0.85    0.9200  -
+wealthy    pos  gender      +0.4    0.10       0.92    0.9200  -
+
+тестов=28, значимых после FDR (q<0.05)=12

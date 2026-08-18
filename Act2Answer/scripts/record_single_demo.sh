@@ -29,7 +29,7 @@ cd "$A/SimplerEnv" || exit 1
 for s in $STARTS; do
   name="demo-single-ep${s}"
   echo "[$(date -u +%H:%M:%S)] запись $name"
-  CUDA_VISIBLE_DEVICES=0 python -u -m simpler_env.eval --vla magma \
+  CUDA_VISIBLE_DEVICES="${GPU:-1}" python -u -m simpler_env.eval --vla magma \
     --assets "$ASSET" --obj-set test --start-id "$s" --count 1 \
     --episode-len 80 --buffer-inferbatch 10 --buffer-minibatch -1 \
     --name "$name" < /dev/null > "$LOG/$name.log" 2>&1

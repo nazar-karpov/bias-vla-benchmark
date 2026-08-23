@@ -54,6 +54,18 @@ from transformers import AutoModelForCausalLM, AutoProcessor
 MODEL_NAME = "microsoft/Magma-8B"
 
 
+def _pick_attn_impl() -> str:
+    """flash_attention_2, если пакет реально есть; иначе sdpa (см. magma_model.py)."""
+    forced = os.environ.get("MAGMA_ATTN")
+    if forced:
+        return forced
+    try:
+        import flash_attn  # noqa: F401
+        return "flash_attention_2"
+    except Exception:
+        return "sdpa"
+
+
 # ---------------------------------------------------------------------------
 # Magma as a plain VLM (no robot-action tokens) — recipe verified live on server
 # ---------------------------------------------------------------------------
@@ -90,7 +102,10 @@ def load_magma(device: str):
         MODEL_NAME,
         device_map=device,
         low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2",
+        # flash-attn на H100-нодах cloud.ru не ставится (нет nvcc) — тот же
+        # авто-выбор, что в magma_model.py::_pick_attn_impl; sdpa численно
+        # эквивалентен, только медленнее. Форс: MAGMA_ATTN=flash_attention_2|sdpa.
+        attn_implementation=_pick_attn_impl(),
         torch_dtype=torch.float16,
         trust_remote_code=True,
     ).eval()

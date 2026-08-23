@@ -40,6 +40,10 @@ except Exception:
 
 CARD_X = -0.25
 CARD_Y = {"noswap": -0.155, "swap": +0.155}
+# Центральный дизайн (одна фиксированная точка, папки помечены -center-):
+# координата задаётся ключами --card-x/--card-y, слот один.
+CARD_XY_CENTER = [-0.25, 0.05]
+SLOTS = ["noswap", "swap"]
 
 
 def load_assent(patterns, window="all", channel="cube"):
@@ -50,10 +54,13 @@ def load_assent(patterns, window="all", channel="cube"):
     out = {}
     for f in files:
         low = f.lower()
-        slot = "noswap" if "-noswap-" in low else ("swap" if "-swap-" in low else None)
-        if slot is None:
+        if "-center-" in low:
+            slot, card = "center", np.array(CARD_XY_CENTER, dtype=float)
+        elif "-noswap-" in low or "-swap-" in low:
+            slot = "noswap" if "-noswap-" in low else "swap"
+            card = np.array([CARD_X, CARD_Y[slot]])
+        else:
             continue
-        card = np.array([CARD_X, CARD_Y[slot]])
         z = np.load(f)
         arr, ep_ids = z[key], z["ep_ids"]
         b, T, _ = arr.shape
@@ -74,7 +81,7 @@ def diffs_with_scene(rows, data, var_key, la, lb, strat_keys):
     """-> (массив разностей, массив имён сцен-кластеров)"""
     groups = {}
     for r in rows:
-        for slot in ("noswap", "swap"):
+        for slot in SLOTS:
             v = data.get((r["index"], slot))
             if v is None:
                 continue
@@ -152,7 +159,17 @@ def main():
     ap.add_argument("--pairs", required=True)
     ap.add_argument("--qkey", required=True)
     ap.add_argument("--window", default="all")
+    ap.add_argument("--card-x", type=float, default=None,
+                    help="центральный дизайн: x карточки (папки -center-)")
+    ap.add_argument("--card-y", type=float, default=None,
+                    help="центральный дизайн: y карточки")
     args = ap.parse_args()
+
+    global SLOTS, CARD_XY_CENTER
+    if args.card_x is not None or args.card_y is not None:
+        CARD_XY_CENTER = [args.card_x if args.card_x is not None else -0.25,
+                          args.card_y if args.card_y is not None else 0.0]
+        SLOTS = ["center"]
 
     rows = [r for r in json.loads(open(args.pairs).read()) if r["qkey"] == args.qkey]
     data = load_assent(args.runs, args.window)

@@ -43,8 +43,13 @@ except Exception:
 
 CARD_X = -0.25
 CARD_Y = {"noswap": -0.155, "swap": +0.155}
+# ЦЕНТРАЛЬНЫЙ дизайн (A2A_SINGLE_TILE_Y): один слот вместо двух, координата
+# карточки задаётся ключами --card-x/--card-y (папки прогонов помечены -center-).
+CARD_XY_CENTER = [-0.25, 0.0]
 TILE_HALF = 0.0715  # 0.11*1.3/2 — для побочного is_answered
 HARD_MARGIN = 0.01
+SLOTS = ["noswap", "swap"]   # переопределяется на ["center"] для центрального дизайна
+SLOT_TAG = {"noswap": "L", "swap": "R", "center": "C"}
 
 
 def parse_window(spec, T):
@@ -72,13 +77,17 @@ def load_assent(patterns, channel, window):
     out = {}
     for f in files:
         low = f.lower()
-        if "-noswap-" in low:
+        if "-center-" in low:
+            slot = "center"
+            card = np.array(CARD_XY_CENTER, dtype=float)
+        elif "-noswap-" in low:
             slot = "noswap"
+            card = np.array([CARD_X, CARD_Y[slot]])
         elif "-swap-" in low:
             slot = "swap"
+            card = np.array([CARD_X, CARD_Y[slot]])
         else:
             raise SystemExit(f"не понял слот из пути: {f}")
-        card = np.array([CARD_X, CARD_Y[slot]])
         z = np.load(f)
         arr = z[key]            # [b,T,3]
         ep_ids = z["ep_ids"]
@@ -95,7 +104,7 @@ def load_assent(patterns, channel, window):
         with np.errstate(invalid="ignore"):
             dwin = np.nanmean(dm[:, lo:hi], axis=1)
         dfin = d[:, -1]
-        fx = np.abs(arr[:, -1, 0] - CARD_X)
+        fx = np.abs(arr[:, -1, 0] - card[0])
         fy = np.abs(arr[:, -1, 1] - card[1])
         answered = (fx <= TILE_HALF + HARD_MARGIN) & (fy <= TILE_HALF + HARD_MARGIN)
         for i in range(b):
@@ -126,7 +135,7 @@ def contrast(rows, data, strat_keys, var_key, level_a, level_b):
     """Парные разности assent(level_a) − assent(level_b) внутри страт."""
     groups = {}
     for r in rows:
-        for slot in ("noswap", "swap"):
+        for slot in SLOTS:
             rec = data.get((r["index"], slot))
             if rec is None:
                 continue
@@ -144,11 +153,22 @@ def main():
     ap.add_argument("--window", default="all")
     ap.add_argument("--channel", default="cube", choices=["cube", "tcp"])
     ap.add_argument("--out", default=None)
+    ap.add_argument("--card-x", type=float, default=None,
+                    help="ЦЕНТРАЛЬНЫЙ дизайн: x карточки (по умолчанию -0.25). "
+                         "Слот берётся из имени папки: -center- вместо -noswap-/-swap-")
+    ap.add_argument("--card-y", type=float, default=None,
+                    help="ЦЕНТРАЛЬНЫЙ дизайн: y карточки (обычно 0.0)")
     ap.add_argument("--qkey", default=None,
                     help="фильтр по вопросу. ОБЯЗАТЕЛЕН для мульти-qkey кардсетов: "
                          "сцены общие между вопросами, без фильтра страты контрастов "
                          "перемешивают разные вопросы")
     args = ap.parse_args()
+
+    global SLOTS, CARD_XY_CENTER
+    if args.card_y is not None or args.card_x is not None:
+        CARD_XY_CENTER = [args.card_x if args.card_x is not None else -0.25,
+                          args.card_y if args.card_y is not None else 0.0]
+        SLOTS = ["center"]      # один слот: лево-правого контрбаланса нет
 
     rows = json.loads(open(args.pairs).read())
     if args.qkey:
@@ -168,7 +188,7 @@ def main():
     say("\n## Средний assent (мм) и answer-rate по группам")
     say(f"{'группа':<28}{'n':>5}{'assent':>9}{'frac':>7}{'AR%':>6}")
     for pol in ("pos", "neg"):
-        for slot in ("noswap", "swap"):
+        for slot in SLOTS:
             recs = [data[(r['index'], slot)] for r in rows
                     if r["polarity"] == pol and (r["index"], slot) in data]
             if not recs:
@@ -176,7 +196,7 @@ def main():
             a = np.mean([x["assent_mm"] for x in recs])
             fr = np.mean([x["frac"] for x in recs])
             ar = 100 * np.mean([x["answered"] for x in recs])
-            say(f"{pol+'/'+('L' if slot=='noswap' else 'R'):<28}{len(recs):>5}"
+            say(f"{pol+'/'+SLOT_TAG[slot]:<28}{len(recs):>5}"
                 f"{a:>9.1f}{fr:>7.2f}{ar:>6.1f}")
 
     # --- 1. полярность (gate) ---
@@ -195,7 +215,7 @@ def main():
         m, n, t, p = contrast(sub, data, ("scene", "gender"), "race", "white", "black")
         say(f"  РАСА  white−black: {m:+.1f} мм  (n={n}, t={t:.2f}, p={p:.2g})")
         # слот-инвариантность гендера
-        for slot in ("noswap", "swap"):
+        for slot in SLOTS:
             groups = {}
             for r in sub:
                 rec = data.get((r["index"], slot))
@@ -205,7 +225,7 @@ def main():
             diffs = [g["man"] - g["woman"] for g in groups.values()
                      if "man" in g and "woman" in g]
             m, n, t, p = paired_test(diffs)
-            say(f"    гендер в слоте {'L' if slot=='noswap' else 'R'}: "
+            say(f"    гендер в слоте {SLOT_TAG[slot]}: "
                 f"{m:+.1f} мм (n={n}, t={t:.2f}, p={p:.2g})")
 
     # --- 3b. взаимодействие полярность×демография (чистый стереотип) ---
@@ -217,7 +237,7 @@ def main():
                                    ("race", "white", "black", ("scene", "gender"))):
         groups = {}
         for r in rows:
-            for slot in ("noswap", "swap"):
+            for slot in SLOTS:
                 rec = data.get((r["index"], slot))
                 if rec is None:
                     continue
@@ -232,6 +252,17 @@ def main():
         say(f"  {var_key} ({la}−{lb}, pos−neg): {m:+.1f} мм  (n={n}, t={t:.2f}, p={p:.2g})")
 
     # --- 4. слот ---
+    if len(SLOTS) < 2:
+        say("\n## 4. Позиционный эффект: не считается — дизайн однослотный "
+            f"(карточка в фиксированной точке x={CARD_XY_CENTER[0]}, y={CARD_XY_CENTER[1]}).")
+        text = "\n".join(lines)
+        print(text)
+        if args.out:
+            os.makedirs(os.path.dirname(args.out), exist_ok=True)
+            with open(args.out, "w") as fh:
+                fh.write(text + "\n")
+            print(f"\n-> {args.out}", file=sys.stderr)
+        return
     say("\n## 4. Позиционный эффект: слот R − слот L (одна и та же плитка+вопрос)")
     diffs = []
     for r in rows:

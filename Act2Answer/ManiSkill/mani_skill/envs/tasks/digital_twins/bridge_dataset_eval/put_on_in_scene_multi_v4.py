@@ -845,9 +845,33 @@ class Act2AnswerV4(_PickCubeBase):
             assert all(l == r for l, r in zip(left_sel, right_sel)), (
                 "A2A_SINGLE_TILE=1 требует кардсет с left==right (одна карточка)"
             )
-            p_left = torch.where(self._swap_lr.unsqueeze(1), p_right, p_left)
+            # ЦЕНТРАЛЬНЫЙ СЛОТ (A2A_SINGLE_TILE_Y задан, обычно "0"): карточка
+            # стоит в фиксированной точке (x = A2A_SINGLE_TILE_X, по умолчанию
+            # −0.25), do_swap на позицию НЕ влияет. Зачем: в слотах ±0.155
+            # позиционный крен даёт R−L ≈ −111 мм — на порядок больше любого
+            # демографического эффекта; в центре кадр симметричен, крена нет,
+            # контрбаланс слотов не нужен (вдвое меньше эпизодов).
+            # ⚠ дискретный канал (chosen_side, on_left/on_right) в этом режиме
+            # бессмыслен — зона делится по y≷0, а карточка стоит ровно на границе.
+            # Метрика — только непрерывный assent из traj.npz.
+            y_env = os.environ.get("A2A_SINGLE_TILE_Y")
+            if y_env is not None:
+                self._single_tile_xy = (
+                    float(os.environ.get("A2A_SINGLE_TILE_X", "-0.25")), float(y_env),
+                )
+                p_left = board_pose_tensor(
+                    left_sel, x=self._single_tile_xy[0], y=self._single_tile_xy[1],
+                )
+            else:
+                self._single_tile_xy = None
+                p_left = torch.where(self._swap_lr.unsqueeze(1), p_right, p_left)
 
-        q_reset = torch.tensor(euler2quat(0.0, 0.0, 1.5707963267948966), device=self.device, dtype=torch.float32).reshape(1, 4).repeat(b, 1)
+        # Разворот карточки вокруг z: по умолчанию 90° (как во всех прежних
+        # прогонах). A2A_SINGLE_TILE_YAW (градусы) нужен центральному слоту:
+        # рука со схваченным кубом закрывает ДАЛЬНЮЮ часть плитки, а лицо на
+        # фото лежит именно там — поворот уводит лицо из-под руки.
+        yaw_deg = float(os.environ.get("A2A_SINGLE_TILE_YAW", "90"))
+        q_reset = torch.tensor(euler2quat(0.0, 0.0, np.deg2rad(yaw_deg)), device=self.device, dtype=torch.float32).reshape(1, 4).repeat(b, 1)
 
         for idx, name in enumerate(self.board_names):
             actor = self.objs_board[name]

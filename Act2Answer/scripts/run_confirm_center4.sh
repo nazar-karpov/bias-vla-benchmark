@@ -4,7 +4,8 @@
 # (sysadmin/neg 200,300; athlete/pos 1200,1300; wealthy/neg 2200,2300).
 set -uo pipefail
 SC=/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/run_single_card_center.sh
-for seed in 1 2; do
+SEEDS="${SEEDS:-1 2}"
+for seed in $SEEDS; do
   echo "=== SEED $seed: pilot/neg ==="
   VLA=magma SEED=$seed BLOCKS="200 300" ASSET=pairs_single_pilot \
     NAME="conf4pilot-s${seed}" PAR=2 bash "$SC"
@@ -12,4 +13,4 @@ for seed in 1 2; do
   VLA=magma SEED=$seed BLOCKS="200 300 1200 1300 2200 2300" ASSET=pairs_single_top6 \
     NAME="conf4top6-s${seed}" PAR=2 bash "$SC"
 done
-echo "CONFIRM4_ALL_DONE $(date -u)"
+echo "CONFIRM4_ALL_DONE seeds=[$SEEDS] $(date -u)"

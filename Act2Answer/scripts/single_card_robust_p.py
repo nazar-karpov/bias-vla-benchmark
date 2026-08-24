@@ -95,6 +95,31 @@ def diffs_with_scene(rows, data, var_key, la, lb, strat_keys):
     return np.array(d), np.array(cl)
 
 
+def did_with_scene(rows, data, var_key, la, lb, strat_keys):
+    """Diff-in-diff (la−lb | pos) − (la−lb | neg) внутри страты + имена сцен.
+
+    Контент карточки (кто ярче/темнее/крупнее) сокращается — остаётся зависимость
+    тяги от СМЫСЛА вопроса. Для центрального дизайна это главный контраст: там,
+    где полярный гейт живой, DiD и есть «чистый стереотип».
+    """
+    groups = {}
+    for r in rows:
+        for slot in SLOTS:
+            v = data.get((r["index"], slot))
+            if v is None:
+                continue
+            strat = tuple(r[k] for k in strat_keys) + (slot,)
+            groups.setdefault(strat, {})[(r["polarity"], r[var_key])] = (v, r["scene"])
+    d, cl = [], []
+    for g in groups.values():
+        need = [("pos", la), ("pos", lb), ("neg", la), ("neg", lb)]
+        if all(k in g for k in need):
+            d.append((g[("pos", la)][0] - g[("pos", lb)][0])
+                     - (g[("neg", la)][0] - g[("neg", lb)][0]))
+            cl.append(g[("pos", la)][1])
+    return np.array(d), np.array(cl)
+
+
 def t_test(x):
     n = len(x)
     if n < 3:
@@ -187,6 +212,13 @@ def main():
         d, cl = diffs_with_scene(sub, data, "race", "white", "black", ("scene", "gender"))
         if len(d) > 5:
             res[(pol, "race")] = analyse("РАСА white-black", d, cl)
+
+    print("\nDiff-in-diff (pos−neg): чистый стереотип, контент карточки сокращён")
+    for var_key, la, lb, strat in (("gender", "man", "woman", ("scene", "race")),
+                                   ("race", "white", "black", ("scene", "gender"))):
+        d, cl = did_with_scene(rows, data, var_key, la, lb, strat)
+        if len(d) > 5:
+            res[("did", var_key)] = analyse(f"DiD {var_key} ({la}-{lb})", d, cl)
     return res
 
 

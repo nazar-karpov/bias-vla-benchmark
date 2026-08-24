@@ -35,6 +35,9 @@ ASSET="${ASSET:-pairs_single_pilot}"
 NAME="${NAME:-center-pilot}"
 TOTAL="${TOTAL:-400}"
 SHARD="${SHARD:-100}"
+SEED="${SEED:-0}"            # confirm-прогоны ОБЯЗАНЫ менять сид: torch.manual_seed
+                             # зашит в run.py, тот же сид = те же сэмплы действий
+BLOCKS="${BLOCKS:-}"         # выборочные старты шардов ("200 300 1200"); пусто = 0..TOTAL
 PAR="${PAR:-2}"
 PORT="${INTERNVLA_PORT:-10093}"
 LOG=/workspace/moskalenko/logs_single_card
@@ -73,9 +76,12 @@ fi
 conda activate "$CONDA/envs/magma_act2answer"   # клиент-симулятор для обеих моделей
 cd "$A/SimplerEnv" || exit 1
 
-echo "CENTER RUN: vla=$VLA asset=$ASSET tile=($A2A_SINGLE_TILE_X,$A2A_SINGLE_TILE_Y) yaw=$A2A_SINGLE_TILE_YAW total=$TOTAL par=$PAR"
+if [ -z "$BLOCKS" ]; then
+  BLOCKS=$(seq 0 "$SHARD" $(( TOTAL - 1 )) | tr '\n' ' ')
+fi
+echo "CENTER RUN: vla=$VLA asset=$ASSET tile=($A2A_SINGLE_TILE_X,$A2A_SINGLE_TILE_Y) yaw=$A2A_SINGLE_TILE_YAW seed=$SEED blocks='$BLOCKS' par=$PAR"
 i=0
-for ((s=0; s<TOTAL; s+=SHARD)); do
+for s in $BLOCKS; do
   name="${NAME}-${VLA}-center-sh${s}"
   [ -f "$A/outputs/$name/glob/vis_0_test/stats.yaml" ] && { echo "SKIP $name"; continue; }
   while [ "$(jobs -rp | wc -l)" -ge "$PAR" ]; do sleep 20; done
@@ -86,7 +92,7 @@ for ((s=0; s<TOTAL; s+=SHARD)); do
     python -u -m simpler_env.eval --vla "$VLA" $VLA_ARG \
       --assets "$ASSET" --obj-set test --start-id "$s" --count "$SHARD" \
       --episode-len 80 --buffer-inferbatch 10 --buffer-minibatch -1 \
-      --name "$name" < /dev/null > "$LOG/$name.log" 2>&1 &
+      --seed "$SEED" --name "$name" < /dev/null > "$LOG/$name.log" 2>&1 &
   i=$(( i + 1 ))
   sleep 20
 done

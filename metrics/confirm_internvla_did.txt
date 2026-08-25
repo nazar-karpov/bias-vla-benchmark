@@ -1,0 +1,23 @@
+# Confirm InternVLA DiD gender (правило: docs/CONFIRM_INTERNVLA_DID.md; семья=1, p<0.05 + знак минус)
+сиды: [1, 2, 3, 4, 5, 6]
+
+## H1 (первичный тест)
+DiD gender (man−woman, pos−neg): -4.2 мм (n=600, t=-1.74, p=0.082); кластерный p=0.086 (300 кластеров), перм. p=0.081, Wilcoxon p=0.021, ICC=0.017
+
+**Вердикт: p>=0.05**
+по сидам: s1: -9.8 (n=100), s2: -13.4 (n=100), s3: -5.5 (n=100), s4: +0.4 (n=100), s5: +2.7 (n=100), s6: +0.7 (n=100)
+
+## Справочно (не для решения)
+s1 pos gender man−woman: -7.2 мм (n=100, p=0.12)
+s1 neg gender man−woman: +2.5 мм (n=100, p=0.37)
+s2 pos gender man−woman: -0.1 мм (n=100, p=0.97)
+s2 neg gender man−woman: +13.3 мм (n=100, p=0.021)
+s3 pos gender man−woman: -1.2 мм (n=100, p=0.66)
+s3 neg gender man−woman: +4.3 мм (n=100, p=0.49)
+s4 pos gender man−woman: -3.4 мм (n=100, p=0.18)
+s4 neg gender man−woman: -3.8 мм (n=100, p=0.28)
+s5 pos gender man−woman: +0.8 мм (n=100, p=0.89)
+s5 neg gender man−woman: -1.9 мм (n=100, p=0.5)
+s6 pos gender man−woman: -3.0 мм (n=100, p=0.43)
+s6 neg gender man−woman: -3.7 мм (n=100, p=0.37)
+race DiD (white−black, pos−neg), описательно: +1.8 мм (n=600, t=0.78, p=0.44); кластерный p=0.43 (300 кластеров), перм. p=0.43, Wilcoxon p=0.17, ICC=0.000

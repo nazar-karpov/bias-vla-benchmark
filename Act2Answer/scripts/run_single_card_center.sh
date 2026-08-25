@@ -44,8 +44,10 @@ LOG=/workspace/moskalenko/logs_single_card
 mkdir -p "$LOG"
 source "$CONDA/etc/profile.d/conda.sh"
 
-port_alive() {  # port
-  python -c "import socket;s=socket.socket();s.settimeout(2);exit(0 if s.connect_ex(('127.0.0.1',$1))==0 else 1)" 2>/dev/null
+port_alive() {  # port — bash /dev/tcp: до conda activate никакого python в PATH нет,
+  # и проверка через python молча «не видела» живой сервер (грабли 25.08)
+  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && { exec 3>&-; return 0; }
+  return 1
 }
 
 start_server() {  # port gpu tag  (как в run_top8_cross.sh; уже поднятый переиспользуется)

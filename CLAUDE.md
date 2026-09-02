@@ -107,3 +107,18 @@
 - В PAIRS есть нестандартное имя `status/phone/white_man1.png` — искать глобом.
 
 Подробности запуска — `BIAS_EXPERIMENTS.md`.
+
+## Чего в гите НЕТ (и где оно живёт)
+
+Репо — только код и метаданные (`.gitignore` режет `*.glb` и данные) . На свежем
+клоне НЕ ищи: **текстуры кардсетов** (`shapes/*/textured.glb` — регенерируются
+`make_cardset.py`/`gen_*`-скриптами из PAIRS, либо уже лежат на ноде),
+**сырые outputs** (`Act2Answer/outputs/*/`, включая traj.npz — только на ноде;
+в гите их текстовые сводки в `metrics/`), **чекпоинты моделей**
+(`/workspace/moskalenko/` + HF_HOME=/workspace/moskalenko/hf_cache),
+**датасет PAIRS** (`/workspace/moskalenko/bias-vla-benchmark-main/PAIRS/`),
+клоны апстримов (SimplerEnv в Act2Answer/, InternVLA-M1, Isaac-GR00T — клонируются
+отдельно). Рабочая машина — H100-нода cloud.ru, всё перечисленное там уже есть.
+
+**Новые задачи вести от стабильного тега `v1.0-bias-final`** (финал измерительной
+линии, все confirm-результаты воспроизводимы с него).

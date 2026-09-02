@@ -196,3 +196,129 @@ Embodied bias/safety: [Hundt+ 2022 FAccT](https://arxiv.org/abs/2207.11569) ·
 [debiaSAE](https://arxiv.org/html/2410.13146v2) · [VisoGender](https://arxiv.org/pdf/2306.12424) ·
 [GenderBias-VL](https://arxiv.org/abs/2407.00600) ·
 [Crossover-дизайн](https://bookdown.org/charlotte_micheloud93/Clinical_Biostatistics/crossover-trials.html)
+
+## 7. Траектория как ответ: второй обзор литературы (03.09.2026)
+
+Первый обзор (разделы выше) дал AUC/MAD, раннее окно и бимодальность. Здесь —
+второй заход: чем ещё психология движения, моторные нейронауки и робототехника
+читают «выбор» из траектории руки, и что из этого считается из нашего traj.npz
+(cube_xyz/tcp_xyz/grasped, 5 Гц, ~80 шагов) без новых прогонов.
+
+### 7.1 Прецедент №1 для статьи: bias у ЛЮДЕЙ уже меряют траекторией руки
+
+Прямое зеркало нашего замера — mouse-tracking социальной психологии:
+- **Race-IAT на траекториях** («The biased hand», PLOS One 2022): в несовместимых
+  блоках средняя траектория сильнее притягивается к «неправильной» кнопке —
+  тот же конструкт «притяжение к альтернативе», что наш pull/assent, и авторы
+  показывают, что траектория чувствительнее классических RT-метрик IAT.
+- **Tracking Prejudice** (Melnikoff, Mann, Stillman, Shen, Ferguson 2021):
+  величина конфликта в траектории **предсказывает дискриминационное поведение** —
+  аргумент, что траекторные меры не «шум моторики», а валидный индикатор установки.
+- Обзоры методологии: Stillman+ TiCS 2018, Hehman/Stolier/Freeman 2015,
+  свежий туториал Wulff+ 2025 (Behavior Research Methods) + пакет **mousetrap**
+  (Kieslich/Wulff) — готовые определения velocity/acceleration профилей,
+  **x-flips** и **sample entropy**.
+
+Фрейминг для статьи усиливается: «мы переносим на VLA инструментарий, которым
+у людей уже измеряют имплицитные установки по движению руки» (наш вклад — робот
+и непрерывная мм-шкала, а не сам принцип).
+
+### 7.2 Vigor: скорость движения = субъективная ценность (НОВЫЙ канал)
+
+Линия Shadmehr (Movement Vigor as a Reflection of Subjective Economic Utility,
+2019; saccade vigor, Curr Biol 2022): пиковая скорость выше, латентность меньше,
+к цели, которую субъект ценит выше — и в саккадах, и в дотягиваниях; vigor растёт
+с decision variable ещё ДО коммита. Для нас это отдельный канал bias, независимый
+от конечной точки: модель может доехать до всех карточек одинаково, но к
+стереотипно-конгруэнтной — быстрее.
+**Считаем из traj.npz:** пиковая скорость сближения max(−d′(t)), латентность
+старта сближения (первый шаг устойчивого d′<0), время до полпути. Bias =
+контраст этих величин по демографии в тех же стратах, что assent.
+
+### 7.3 Changes of mind: когда и как «передумывает»
+
+- Resulaj+ 2009 — канонический CoM; eNeuro 2021 (motor-state dependent CoM):
+  вероятность передумать падает с прогрессом и скоростью к цели → метрика
+  **P(разворот | прогресс ≥ x)** и «point of no return»;
+  там же — техника **sliding t-test**: момент, где траектории условий начинают
+  значимо расходиться. Для нас это «**bias onset time**»: в каком бине из 101
+  man- и woman-траектории расходятся — прямое расширение запланированной кривой
+  pull (п.1 плана 15.08) от профиля к моменту возникновения.
+- Nature Comms 2024 (rapid updating by accumulated evidence): решение продолжает
+  втекать в уже идущее движение → средняя по окну свёртка систематически
+  смешивает «раннее решение» и «позднюю коррекцию», профиль по бинам обязателен.
+- **Счётчик приближений-отступлений** (аналог x-flips вдоль оси «к карточке»):
+  число смен знака сглаженного d′(t) — формализует наше «положил и снёс».
+
+### 7.4 Ранний участок: initial heading как readout выбора
+
+Go-before-you-know литература: начальное направление запуска — это чтение
+пространственного усреднения/плана (споры optimization-vs-averaging — PLOS One
+2022, grip-force 2017 — нам не важны: нам нужен readout, не механизм).
+**Считаем:** угол вектора движения куба/tcp на фиксированном раннем прогрессе
+(10–20% пути) относительно направления на карточку; в парном дизайне — угол
+между направлениями на две плитки. Плюс из «changes of mind»-линии: доля
+эпизодов, где ранний heading и финальная плитка расходятся (= поздние коррекции).
+
+### 7.5 Байесовский наблюдатель: legibility как «когда модель решила»
+
+Dragan/Srinivasa (legibility): наблюдатель с моделью движения ведёт постериор
+P(цель | префикс траектории); legibility = как быстро постериор концентрируется
+на истинной цели (ранние участки весятся сильнее). Свежее: Bayesian intention
+inference (arXiv 2509.24928), LegibVLA (посттериор наблюдателя как оптимизируемый
+критерий — то есть поле уже применяет это К VLA, но для выразительности, не для
+bias). **Для нас:** простой наблюдатель (гауссовская модель движения к цели) →
+**время коммита** t*, когда P(левая плитка | траектория) пересекает 0.9; bias =
+сдвиг t* и финального постериора по демографии. Это принципиальный ответ на
+вопрос «в какой момент выбор сделан», дискретному каналу недоступный.
+
+### 7.6 Контекст VLA-оценивания: наши метрики — незанятая ниша
+
+Свежий evaluation-centric обзор VLA (582 статьи 2023–05.2026): отчётность
+одномерна, доминирует success rate; траекторная согласованность/качество
+исполнения систематически не репортятся. Таксономии отказов (SO-101 benchmark:
+semantic- vs execution-level failures, recovery rate; LIBERO-Plus robustness) —
+ближайшее к нам, но про надёжность, не про fairness. Подтверждается вывод
+первого обзора: демографический bias по траектории у VLA не меряет никто.
+
+### 7.7 Дорого, но красиво (кандидаты на потом)
+
+- **Кинематическое декодирование** (Becchio: Decoding social decisions from
+  movement kinematics, 2022): классификатор предсказывает скрытое состояние по
+  кинематике; у нас — decoding accuracy «демография карточки из траектории»
+  как omnibus-мера bias. Требует аккуратной кросс-валидации по сценам.
+- **Embodied choice модели** (Lepora & Pezzulo 2015, PLOS Comp Biol): подгонка
+  модели с action preparation + commitment к траекториям — механистическая
+  интерпретация, для статьи-продолжения, не для текущей.
+
+### 7.8 Обновлённый план по traj.npz (замена плана от 15.08)
+
+Tier A (дёшево, из готовых traj.npz): (1) кривая pull/assent по 101 бину +
+**bias onset** sliding-тестом; (2) MAD/AUC; (3) счётчик approach-retreat;
+(4) **vigor** (пиковая скорость сближения, латентность); (5) бимодальность
+(dip/BC). Tier B: постериор наблюдателя и время коммита t*; P(разворот|прогресс).
+Tier C: декодирование классификатором. Отчётность — как в разделе 5 (dz, CI,
+BH-FDR, для новых семей — пре-регистрация, см. docs/CONFIRM_CENTER4.md).
+
+### Источники второго обзора
+
+[The biased hand (PLOS One 2022)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0271748) ·
+[Tracking Prejudice (2021)](https://journals.sagepub.com/doi/abs/10.1177/1948550619900574) ·
+[Stillman+ TiCS 2018](https://www.paulstillman.com/wp-content/uploads/2019/01/Stillman_2018_TiCS.pdf) ·
+[Hehman+ 2015](https://journals.sagepub.com/doi/abs/10.1177/1368430214538325) ·
+[mousetrap](https://link.springer.com/article/10.3758/s13428-017-0900-z) ·
+[Movement Vigor / Subjective Utility](https://pubmed.ncbi.nlm.nih.gov/30878152/) ·
+[Saccade vigor & value](https://pubmed.ncbi.nlm.nih.gov/32374201/) ·
+[Saccade vigor & deliberation (Curr Biol 2022)](https://www.sciencedirect.com/science/article/pii/S0960982222017018) ·
+[CoM motor-state (eNeuro 2021)](https://www.eneuro.org/content/8/6/ENEURO.0174-21.2021) ·
+[Rapid updating (Nat Comms 2024)](https://www.nature.com/articles/s41467-024-53586-7) ·
+[Urgency/basal ganglia](https://pubmed.ncbi.nlm.nih.gov/28823728/) ·
+[Optimization vs averaging (PLOS One 2022)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0265943) ·
+[Grip force evidence (2017)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5601432/) ·
+[Legibility (Dragan)](https://personalrobotics.cs.washington.edu/publications/dragan2013legibility.pdf) ·
+[Bayesian intention inference](https://arxiv.org/pdf/2509.24928) ·
+[VLA evaluation survey](https://www.preprints.org/frontend/manuscript/06086b94ba9516b5e833358933e8ecac/download_pub) ·
+[SO-101 failure/recovery](https://arxiv.org/pdf/2606.08881) ·
+[LIBERO-Plus](https://arxiv.org/pdf/2510.13626) ·
+[Decoding social decisions (Becchio)](https://pmc.ncbi.nlm.nih.gov/articles/PMC9700015/) ·
+[Embodied Choice (Lepora & Pezzulo 2015)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004110)

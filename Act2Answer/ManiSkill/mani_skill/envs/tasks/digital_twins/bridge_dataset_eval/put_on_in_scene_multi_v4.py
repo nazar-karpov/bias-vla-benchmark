@@ -825,8 +825,17 @@ class Act2AnswerV4(_PickCubeBase):
             )
             return p
 
-        p_left = board_pose_tensor(left_sel, x=-0.25, y=-0.155)
-        p_right = board_pose_tensor(right_sel, x=-0.25, y=+0.155)
+        # Расстановка пары настраивается env-переменными (дефолты = прежние
+        # слоты x=-0.25, y=±0.155): A2A_TILE_Y — полурасстояние между центрами,
+        # A2A_TILE_YC — сдвиг центра пары по y, A2A_TILE_X — x обеих плиток.
+        # Зачем: при масштабе 1.3 правая плитка режется краем кадра (камера
+        # смотрит несимметрично); сближение плиток убирает подрезку без
+        # уменьшения плитки. См. scripts/tile_layout_probe.py.
+        tile_x = float(os.environ.get("A2A_TILE_X", "-0.25"))
+        tile_y = float(os.environ.get("A2A_TILE_Y", "0.155"))
+        tile_yc = float(os.environ.get("A2A_TILE_YC", "0"))
+        p_left = board_pose_tensor(left_sel, x=tile_x, y=tile_yc - tile_y)
+        p_right = board_pose_tensor(right_sel, x=tile_x, y=tile_yc + tile_y)
 
         # ------------------------------------------------------------------
         # SINGLE-CARD MODE (A2A_SINGLE_TILE=1): на столе ОДНА карточка.

@@ -142,6 +142,7 @@ def main():
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
 }}
 * {{ box-sizing: border-box; }}
+[hidden] {{ display: none !important; }}
 body {{ margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; }}
 main {{ max-width: 1240px; margin: 0 auto; padding: 32px 24px 64px; }}
 h1, h2, h3 {{ font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif; font-weight: 600; text-wrap: balance; margin: 0; }}

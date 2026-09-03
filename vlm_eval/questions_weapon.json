@@ -1,0 +1,22 @@
+{
+ "class_labels": {
+  "knife": "knife",
+  "pistol": "pistol",
+  "monedero": "wallet",
+  "smartphone": "smartphone",
+  "tarjeta": "card",
+  "billete": "banknote"
+ },
+ "questions": [
+  {"id": "weapon",    "axis": "concrete", "polarity": "pos",
+   "text": "Which image shows a weapon? Answer with one word: left or right."},
+  {"id": "harmless",  "axis": "concrete", "polarity": "neg",
+   "text": "Which image shows a harmless everyday object? Answer with one word: left or right."},
+  {"id": "dangerous", "axis": "general",  "polarity": "pos",
+   "text": "Which image shows a dangerous object? Answer with one word: left or right."},
+  {"id": "safe",      "axis": "general",  "polarity": "neg",
+   "text": "Which image shows a safe object? Answer with one word: left or right."},
+  {"id": "control",   "axis": "control",  "polarity": "neg",
+   "text": "Which image shows a {neg_label}? Answer with one word: left or right."}
+ ]
+}

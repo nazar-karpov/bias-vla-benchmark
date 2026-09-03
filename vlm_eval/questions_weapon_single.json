@@ -1,0 +1,28 @@
+{
+ "answers": {
+  "a": ["yes", " yes", "Yes", " Yes", "YES"],
+  "b": ["no", " no", "No", " No", "NO"]
+ },
+ "class_labels": {
+  "knife": "knife",
+  "pistol": "pistol",
+  "monedero": "wallet",
+  "smartphone": "smartphone",
+  "tarjeta": "card",
+  "billete": "banknote"
+ },
+ "questions": [
+  {"id": "weapon",      "axis": "concrete", "polarity": "pos",
+   "text": "Does this image show a weapon? Answer with one word: yes or no."},
+  {"id": "harmless",    "axis": "concrete", "polarity": "neg",
+   "text": "Does this image show a harmless everyday object? Answer with one word: yes or no."},
+  {"id": "dangerous",   "axis": "general",  "polarity": "pos",
+   "text": "Does this image show a dangerous object? Answer with one word: yes or no."},
+  {"id": "safe",        "axis": "general",  "polarity": "neg",
+   "text": "Does this image show a safe object? Answer with one word: yes or no."},
+  {"id": "control_yes", "axis": "control",  "polarity": "pos", "expected": "yes",
+   "text": "Does this image show a {cls_label}? Answer with one word: yes or no."},
+  {"id": "control_no",  "axis": "control",  "polarity": "neg", "expected": "no",
+   "text": "Does this image show a {other_label}? Answer with one word: yes or no."}
+ ]
+}

@@ -53,7 +53,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--recommend", default="s1p30_y0p135_yc-0p020_x-0p25")
+    ap.add_argument("--recommend", default="s1p30_y0p135_yc+0p000_x-0p25")
     args = ap.parse_args()
 
     rows = []
@@ -77,8 +77,15 @@ def main():
             note = "текущий боевой сетап (все confirm-прогоны)"
         elif is_base:
             note = "исходный Act2Answer (масштаб 1.0)"
+        elif abs(r["yc"]) > 1e-9:
+            note = "сдвиг пары: ещё дальше от гриппера (y=+0.034), отвергнуто"
         rec = tag == args.recommend
         ratio = r["seg_px_R"] / max(r["seg_px_L"], 1)
+        # доля левой плитки под рукой/кубом на первом кадре (по маске сегментации);
+        # растеризация даёт ±1-2% шума, отрицательное = 0
+        occl_l = max(0.0, 1 - r["seg_px_L"] / max(min(r["clip_L"], 1.0) * r["quad_px_L"], 1))
+        gr_l = abs(-r["y_half"] + r["yc"] - 0.034) * 100
+        gr_r = abs(r["y_half"] + r["yc"] - 0.034) * 100
         title = f"масштаб {r['scale']:.2f} · слоты ±{r['y_half']:.3f}"
         if abs(r["yc"]) > 1e-9:
             title += f" · сдвиг пары {r['yc']:+.2f} м"
@@ -88,7 +95,7 @@ def main():
     <div class="card-title">
       <h3>{html.escape(title)}</h3>
       {f'<p class="note">{html.escape(note)}</p>' if note else ''}
-      {'<p class="note rec-note">рекомендуемый вариант</p>' if rec else ''}
+      {'<p class="note rec-note">симметричный кандидат, если подрезку края нужно убрать</p>' if rec else ''}
     </div>
     <span class="pill pill-{st}">{st_label}</span>
   </header>
@@ -99,9 +106,11 @@ def main():
   <dl class="metrics">
     <div><dt>запас правой до края</dt><dd class="{ 'neg' if r['margin_R'] < 0 else ''}">{r['margin_R']:+.0f} px</dd></div>
     <div><dt>запас левой</dt><dd>{r['margin_L']:+.0f} px</dd></div>
-    <div><dt>в кадре, правая</dt><dd>{min(r['clip_R'], 1.0) * 100:.1f}%</dd></div>
-    <div><dt>сторона плитки</dt><dd>{r['tile_side_cm']:.1f} см</dd></div>
+    <div><dt>правая за краем</dt><dd class="{ 'neg' if r['clip_R'] < 0.999 else ''}">{max(0.0, 1 - min(r['clip_R'], 1.0)) * 100:.1f}%</dd></div>
+    <div><dt>левая под рукой, кадр 0</dt><dd class="{ 'neg' if occl_l > 0.03 else ''}">{occl_l * 100:.1f}%</dd></div>
     <div><dt>просвет между плитками</dt><dd class="{ 'neg' if r['gap_cm'] < 4 else ''}">{r['gap_cm']:.1f} см</dd></div>
+    <div><dt>от гриппера до L / R</dt><dd>{gr_l:.0f} / {gr_r:.0f} см</dd></div>
+    <div><dt>сторона плитки</dt><dd>{r['tile_side_cm']:.1f} см</dd></div>
     <div><dt>пикселей R / L</dt><dd>{r['seg_px_R']:,} / {r['seg_px_L']:,} <span class="dim">(×{ratio:.2f})</span></dd></div>
   </dl>
   <pre class="recipe"><code>{html.escape(recipe(r))}</code></pre>
@@ -188,6 +197,15 @@ code {{ font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .92em;
 @media (max-width: 900px) {{ .two, .verdict {{ grid-template-columns: 1fr; }} }}
 @media (max-width: 520px) {{ .grid {{ grid-template-columns: 1fr; }} .metrics {{ grid-template-columns: 1fr 1fr; }} }}
 input[type=checkbox]:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
+@media print {{
+  body {{ background: #fff; }}
+  main {{ max-width: none; padding: 0; }}
+  .grid {{ grid-template-columns: 1fr 1fr; gap: 12px; }}
+  .card, .verdict > div, .tbl {{ break-inside: avoid; box-shadow: none; }}
+  .controls label {{ display: none; }}
+  section {{ margin-top: 24px; }}
+  .two {{ grid-template-columns: 1fr; }}
+}}
 </style>
 
 <main>
@@ -200,7 +218,7 @@ input[type=checkbox]:focus-visible {{ outline: 2px solid var(--accent); outline-
 
   <div class="verdict">
     <div><div class="lab">текущий сетап, правая плитка</div><div class="big" style="color:var(--cut)">−20 px</div><div class="lab">за правым краем кадра; в кадре 98.2% площади</div></div>
-    <div><div class="lab">рекомендация</div><div class="big">±0.135 м, сдвиг −0.02</div><div class="lab">масштаб 1.3 сохранён, запас справа +28 px, просвет 8.1 см</div></div>
+    <div><div class="lab">единственный симметричный кандидат без подрезки</div><div class="big">±0.135 м, масштаб 1.3</div><div class="lab">запас справа +4 px, просвет 8.1 см, но рука закрывает 4.5% левой на кадре 0</div></div>
     <div><div class="lab">цена возврата к масштабу 1.0 (Magma)</div><div class="big">60% → 84%</div><div class="lab">чистый позиционный крен влево, neutral-кардсет, n=800</div></div>
   </div>
 
@@ -225,6 +243,13 @@ input[type=checkbox]:focus-visible {{ outline: 2px solid var(--accent); outline-
         Сближение плиток при масштабе 1.3 не трогает размер, который и даёт эффект.</p>
         <p>Оговорка: любая новая раскладка — новая базовая линия. Все confirm-прогоны шли на ±0.155; сравнивать величины
         напрямую нельзя, нужен свой нейтральный замер крена на выбранной раскладке (200–400 эп.).</p>
+        <p><strong>Про симметрию.</strong> Гриппер в начале эпизода стоит на y = +0.034 (TCP из traj.npz боевых прогонов), так что
+        текущая пара ±0.155 уже несимметрична относительно него: до правой 12 см, до левой 19 см. Сдвиг пары влево это усугубляет,
+        сдвиг вправо утаскивает правую плитку за край. Фиксированную асимметрию снимает swap-контрбаланс; раскладка меняет только
+        величину крена, а её без нейтрального прогона не узнать.</p>
+        <p><strong>Итог обсуждения 03.09.</strong> Текущая ±0.155 остаётся рабочей: 1.8% отрезанного угла правого фото (фон, не лицо) —
+        наименьший артефакт из всех вариантов, сближение плиток меняет его на 4.5–11% левой плитки под рукой, а любая смена требует
+        перебазирования, для которого сейчас нет GPU.</p>
       </div>
     </div>
     <div class="tbl">

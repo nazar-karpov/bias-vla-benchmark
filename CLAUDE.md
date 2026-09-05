@@ -28,10 +28,15 @@
 - Анализы single-card: `single_card_assent.py` (для центра — `--card-x/--card-y`;
   мульти-кардсетные семьи ТОЛЬКО через `single_card_center_fdr.py --sets`,
   индексы эпизодов кардсетов пересекаются и затирают друг друга).
-- Прогоны живут на H100-ноде cloud.ru в `/workspace/moskalenko/` (переживает
-  смену нод; домашняя папка — нет). conda: `/workspace/moskalenko/conda`,
-  env `magma_act2answer` (клиент+симулятор), `internvla` (сервер политики).
-  `git fetch` на ноде работает только с `protocol.version=1` (закреплён в конфиге).
+- **С 05.09.2026 рабочая машина — Selectel-сервер Bohr** (`moskalenko@176.114.85.176`,
+  2×RTX 4090 48 GB, 96 CPU, 251 GB RAM, sudo НЕТ). Всё в `/home/moskalenko/ws/`:
+  репа `ws/bias-vla-benchmark-main`, `HF_HOME=ws/hf_cache`, `MS_ASSET_DIR=ws/maniskill_assets`,
+  conda `ws/conda` (env `magma_act2answer`). Перед любым запуском: `source ~/ws/env_bohr.sh`
+  (экспортирует REPO_ROOT/HF_HOME/MS_ASSET_DIR/PYTHONPATH, активирует env, cd в SimplerEnv).
+  Рецепт сборки и приёмочные тесты — `scripts/setup/bohr/`. SAPIEN рендерит на GPU (проверено).
+- Прежняя H100-нода cloud.ru (`/workspace/moskalenko/`) с 03.09 БЕЗ GPU (monitor-нода);
+  всё оттуда перенесено на Bohr (`scripts/setup/bohr/migrate_to_bohr.sh`). conda там
+  не переносилась (абсолютный префикс) — пересобрана из `ws/env_exports/*.yml`.
 
 
 ## Каждый эксперимент — строка в журнале
@@ -115,10 +120,11 @@
 `make_cardset.py`/`gen_*`-скриптами из PAIRS, либо уже лежат на ноде),
 **сырые outputs** (`Act2Answer/outputs/*/`, включая traj.npz — только на ноде;
 в гите их текстовые сводки в `metrics/`), **чекпоинты моделей**
-(`/workspace/moskalenko/` + HF_HOME=/workspace/moskalenko/hf_cache),
-**датасет PAIRS** (`/workspace/moskalenko/bias-vla-benchmark-main/PAIRS/`),
+(`HF_HOME=~/ws/hf_cache` на Bohr), **датасет PAIRS** (`~/ws/bias-vla-benchmark-main/PAIRS/`),
 клоны апстримов (SimplerEnv в Act2Answer/, InternVLA-M1, Isaac-GR00T — клонируются
-отдельно). Рабочая машина — H100-нода cloud.ru, всё перечисленное там уже есть.
+отдельно). Рабочая машина — Bohr (см. выше), всё перечисленное там уже есть.
+⚠ `shapes/` части кардсетов — симлинки на `pairs_bias_crop/shapes` (сделаны относительными
+05.09; `pairs_choice` и `sohas96x2*` битые ещё с V100 — их меши не сохранились).
 
 **Новые задачи вести от стабильного тега `v1.0-bias-final`** (финал измерительной
 линии, все confirm-результаты воспроизводимы с него).

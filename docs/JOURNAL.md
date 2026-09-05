@@ -17,6 +17,36 @@
 
 ---
 
+## 2026-09-05 — Переезд на Selectel-сервер Bohr (cloud.ru без GPU)
+
+**Контекст:** cloud.ru-нода с 03.09 пересоздана как monitor-нода без GPU (16 CPU, 3 ГБ RAM);
+Назар завёл Selectel-сервер Bohr (`moskalenko@176.114.85.176`: 2×RTX 4090 48 GB, 96 CPU,
+251 GB RAM, Ubuntu 24.04, **без sudo**). Папка /workspace между облаками не синкается —
+переносим сами.
+**Сделано:**
+1. Прямой канал cloud.ru → Bohr (ключ `/workspace/moskalenko/.ssh/bohr_ed25519`, rsync на
+   cloud.ru поставлен через conda — в системе его нет). `migrate_to_bohr.sh`: репа целиком с
+   .git/outputs (39 ГБ), ассеты ManiSkill, datasets, экспорты env, setup-скрипты; отдельным
+   потоком `hf_cache` (202 ГБ, ~45 MB/s, ≈1.2 ч). conda НЕ переносится (абсолютный префикс).
+2. На Bohr всё в `~/ws` (root нет → /workspace недоступен): Miniconda `ws/conda`, env
+   `magma_act2answer` пересобран из `env_exports/magma_act2answer.pip.txt` (стадия 1: torch
+   2.4.0+cu121 и pip-пакеты; стадия 2: requirements/magma.txt + editable ManiSkill/SimplerEnv).
+   flash-attn 2.6.3 — готовый wheel (cu123/torch2.4/cp310), nvcc не нужен.
+3. Симлинки `shapes/` кардсетов (71 шт.) были АБСОЛЮТНЫМИ на `/workspace/moskalenko/...` и
+   закоммичены такими — переведены в относительные (`../pairs_bias_crop/shapes`), теперь
+   переносимы. 4 битых остаются с V100 (`pairs_choice`, `sohas96x2*`): мешей нет.
+4. `scripts/magma_vlm_qa.py`: attn_implementation выбирается автоматически
+   (flash_attn есть → flash_attention_2, нет → sdpa; форс `MAGMA_ATTN`), раньше жёстко flash.
+5. Точка входа `~/ws/env_bohr.sh` (REPO_ROOT/HF_HOME/MS_ASSET_DIR/PYTHONPATH + env + cd
+   SimplerEnv); всё это в `scripts/setup/bohr/`, разделы в CLAUDE.md и docs/INFRA.md.
+**Результат (приёмка):** `test_sapien_gpu.py` — SAPIEN рендерит через NVIDIA Vulkan за 0.9 с
+(на RunPod с драйвером 580.126 дедлочился, здесь 580.173 — ок); `smoke_traj_bohr.sh` — 4 эпизода
+симулятора на GPU, traj.npz пишется (SMOKE_OK); `test_magma_bohr.sh` — Magma-8B грузится,
+2 эпизода VLM-опроса отвечены (sdpa), повтор с flash_attention_2 запущен.
+**Дальше:** дождаться hf_cache; собрать env `internvla` (экспорт есть); ветка `vlm_eval` с
+незапушенным коммитом Назара перенесена как есть; старые раннеры в `ws/setup/*.sh` ссылаются
+на `/workspace/moskalenko` — править при первом использовании.
+
 ## 2026-09-03 — Раскладка плиток: правая режется краем при 1.3, лечим сближением, а не уменьшением
 
 **Контекст:** при рабочем масштабе 1.3 правая плитка выходит за правый край кадра (камера Bridge

@@ -1,5 +1,26 @@
 # Инфраструктура
 
+## ⭐ Bohr — Selectel, рабочий сервер с 05.09.2026
+
+`ssh moskalenko@176.114.85.176` (пароль у Назара; ключи Назара/агента в authorized_keys).
+Ubuntu 24.04, 96 CPU, 251 GB RAM, 2× RTX 4090 48 GB (driver 580.173), диск 1.8 TB.
+**sudo нет** → без apt/nvcc//workspace; всё в `/home/moskalenko/ws`:
+
+| что | где |
+|---|---|
+| репа | `ws/bias-vla-benchmark-main` (push через deploy-ключ `~/.ssh/github_deploy`, `core.sshCommand` в конфиге) |
+| веса HF | `ws/hf_cache` (HF_HOME) — перенесены с cloud.ru целиком |
+| ассеты ManiSkill | `ws/maniskill_assets` (MS_ASSET_DIR) |
+| conda | `ws/conda` (Miniconda), env `magma_act2answer`: py3.10, torch 2.4.0+cu121, sapien 3.0.0b1, mani_skill/simpler_env editable |
+| экспорты env с cloud.ru | `ws/env_exports/*.yml, *.pip.txt` (internvla ещё не собран) |
+| старые раннеры cloud.ru | `ws/setup/*.sh` (пути `/workspace/moskalenko` → менять на `~/ws`) |
+
+Запуск: `source ~/ws/env_bohr.sh` → REPO_ROOT/HF_HOME/MS_ASSET_DIR/PYTHONPATH, env, cd SimplerEnv.
+Приёмка 05.09: `scripts/setup/bohr/test_sapien_gpu.py` (GPU-Vulkan рендер ок, 0.9 с),
+`smoke_traj_bohr.sh` (4 эпизода симулятора без модели, SMOKE_OK), `test_magma_bohr.sh`
+(Magma-8B + рендер, 2 эпизода). Сборка env: `bohr_env_stage1.sh` → `bohr_env_stage2.sh`.
+
+
 ## Сервер для экспериментов
 
 Прогоны VLA-моделей выполняются на удалённом сервере по SSH.

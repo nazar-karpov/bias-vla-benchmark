@@ -80,6 +80,16 @@ def fix_vision_layerscale(model):
     return len(remap)
 
 
+
+def _attn_impl():
+    """flash_attention_2, если flash_attn установлен, иначе sdpa; форс — MAGMA_ATTN=sdpa|flash_attention_2.
+    (Bohr: nvcc нет, flash-attn ставится только готовым wheel'ом.)"""
+    import importlib.util
+    forced = os.environ.get("MAGMA_ATTN")
+    if forced:
+        return forced
+    return "flash_attention_2" if importlib.util.find_spec("flash_attn") else "sdpa"
+
 def load_magma(device: str):
     print(f"Loading {MODEL_NAME} ...", flush=True)
     processor = AutoProcessor.from_pretrained(MODEL_NAME, trust_remote_code=True)
@@ -90,7 +100,7 @@ def load_magma(device: str):
         MODEL_NAME,
         device_map=device,
         low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2",
+        attn_implementation=_attn_impl(),
         torch_dtype=torch.float16,
         trust_remote_code=True,
     ).eval()

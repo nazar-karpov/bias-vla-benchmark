@@ -17,6 +17,65 @@
 
 ---
 
+## 2026-09-05 — Кадры FOCUS для двух раскладок плиток (под VLM-замер коллег)
+
+**Контекст:** в чате команды 03.09 Андрей выбрал раскладку «масштаб 1.2, слоты ±0.14» (правая
+плитка не режется, плитки заметно крупнее исходных), Никита просит проверить ещё 2 модели на
+ней и на исходном Act2Answer-конфиге. GPU у команды нет, у нас 2×4090 — решили НЕ гонять VLA,
+а отрендерить первые кадры симуляции для обоих конфигов; bias по ним меряет VLM другой человек.
+Датасет — FOCUS (REFLECT, ACL 2026) с общего Google Drive команды (подключён на Bohr через
+rclone как `bias_ds:`): face-only counterfactuals, 480 фото = 6 профессий × 8 сцен × 10
+демографий; манифест команды `focus_two_image_selection.csv` (12 960 uid = 2160 пар × ab/ba ×
+3 атрибута) и параллельный VLM-манифест с теми же uid.
+**Сделано:**
+1. Фото FOCUS прямоугольные (1264×848, 848×1264 и др.) — `focus_square_crops.py`: квадрат
+   min(W,H) по лицу (Haar на base.jpg, 44/48 сцен; 3 по медиане, 1 центр), ОДИН бокс на
+   сцену, чтобы контрфактические пары остались параллельными; 512×512.
+2. `gen_focus_cardset.py` → кардсет `focus_pairs`: 480 плиток (make_cardset, model_db scale
+   1.0 → эффективный масштаб = BOARD_XY_SCALE), pairs.json = 2160 уникальных пар в порядке ab,
+   ba = do_swap; `pairs_meta.json` хранит uid_base/картинки/группы.
+3. `render_focus_frames.py` — первые кадры obs-камеры, по конфигу на процесс (env читает
+   BOARD_XY_SCALE при импорте), докат по существующим PNG. Обе карты параллельно, ~6 пар/с.
+4. `build_focus_frames_manifest.py` — manifest.csv (uid × конфиг → кадр, оба вопроса, что
+   слева/справа НА КАДРЕ), проверка совпадения картинок манифеста и кадра.
+**Результат:** 25920 строк манифеста (25920 ожидалось; пропусков 0,
+несовпадений 0), 8640 PNG в `Act2Answer/outputs/focus_frames/` (README там же).
+Проверено глазами: в ab слева left_image, в ba наоборот; обе плитки целиком в кадре в обоих
+конфигах.
+**Дальше:** отдать папку коллеге с VLM (вопрос — выкладывать ли на общий Drive); при желании
+то же для PAIRS (200 пар) для связи с прежними числами. Отменённые в этот же день планы:
+scale-sweep на SpatialVLA/GR00T (окружения не собраны: gr00t требует python≥3.12).
+
+## 2026-09-05 — Переезд на Selectel-сервер Bohr (cloud.ru без GPU)
+
+**Контекст:** cloud.ru-нода с 03.09 пересоздана как monitor-нода без GPU (16 CPU, 3 ГБ RAM);
+Назар завёл Selectel-сервер Bohr (`moskalenko@176.114.85.176`: 2×RTX 4090 48 GB, 96 CPU,
+251 GB RAM, Ubuntu 24.04, **без sudo**). Папка /workspace между облаками не синкается —
+переносим сами.
+**Сделано:**
+1. Прямой канал cloud.ru → Bohr (ключ `/workspace/moskalenko/.ssh/bohr_ed25519`, rsync на
+   cloud.ru поставлен через conda — в системе его нет). `migrate_to_bohr.sh`: репа целиком с
+   .git/outputs (39 ГБ), ассеты ManiSkill, datasets, экспорты env, setup-скрипты; отдельным
+   потоком `hf_cache` (202 ГБ, ~45 MB/s, ≈1.2 ч). conda НЕ переносится (абсолютный префикс).
+2. На Bohr всё в `~/ws` (root нет → /workspace недоступен): Miniconda `ws/conda`, env
+   `magma_act2answer` пересобран из `env_exports/magma_act2answer.pip.txt` (стадия 1: torch
+   2.4.0+cu121 и pip-пакеты; стадия 2: requirements/magma.txt + editable ManiSkill/SimplerEnv).
+   flash-attn 2.6.3 — готовый wheel (cu123/torch2.4/cp310), nvcc не нужен.
+3. Симлинки `shapes/` кардсетов (71 шт.) были АБСОЛЮТНЫМИ на `/workspace/moskalenko/...` и
+   закоммичены такими — переведены в относительные (`../pairs_bias_crop/shapes`), теперь
+   переносимы. 4 битых остаются с V100 (`pairs_choice`, `sohas96x2*`): мешей нет.
+4. `scripts/magma_vlm_qa.py`: attn_implementation выбирается автоматически
+   (flash_attn есть → flash_attention_2, нет → sdpa; форс `MAGMA_ATTN`), раньше жёстко flash.
+5. Точка входа `~/ws/env_bohr.sh` (REPO_ROOT/HF_HOME/MS_ASSET_DIR/PYTHONPATH + env + cd
+   SimplerEnv); всё это в `scripts/setup/bohr/`, разделы в CLAUDE.md и docs/INFRA.md.
+**Результат (приёмка):** `test_sapien_gpu.py` — SAPIEN рендерит через NVIDIA Vulkan за 0.9 с
+(на RunPod с драйвером 580.126 дедлочился, здесь 580.173 — ок); `smoke_traj_bohr.sh` — 4 эпизода
+симулятора на GPU, traj.npz пишется (SMOKE_OK); `test_magma_bohr.sh` — Magma-8B грузится,
+2 эпизода VLM-опроса отвечены (sdpa), повтор с flash_attention_2 запущен.
+**Дальше:** дождаться hf_cache; собрать env `internvla` (экспорт есть); ветка `vlm_eval` с
+незапушенным коммитом Назара перенесена как есть; старые раннеры в `ws/setup/*.sh` ссылаются
+на `/workspace/moskalenko` — править при первом использовании.
+
 ## 2026-09-03 — Раскладка плиток: правая режется краем при 1.3, лечим сближением, а не уменьшением
 
 **Контекст:** при рабочем масштабе 1.3 правая плитка выходит за правый край кадра (камера Bridge

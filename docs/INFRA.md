@@ -1,5 +1,18 @@
 # Инфраструктура
 
+## vlm8 — cloud.ru, 8× H100, ТОЛЬКО VLM (с 05.09.2026)
+
+`ssh antonov-seg-tokens.ai0001053-01202@ssh-sr006-jupyter.ai.cloud.ru -p 2222 -i ~/.ssh/mls.key`
+(alias `vlm8`). 8× H100 80GB (часть занята чужими процессами), 128 CPU, 2 TB RAM, `/workspace`
+6.3 TB — **общий с другим пользователем**, свои файлы только в `/workspace/moskalenko/`.
+conda нет, rsync `~/.local/bin/rsync`. Симулятор сюда не ставится (по решению Назара).
+
+Кадры симуляции всех четырёх датасетов (3 раскладки) лежат в
+`/workspace/moskalenko/sim_frames/{focus,pairs,veri,visbias}_frames/` — зеркало папок
+`Act2Answer/outputs/*_frames/` с Bohr (`sim_frames/pull_frames.sh` докачивает по ключу
+`~/.ssh/vlm8_to_bohr`). Формат — `docs/*_FRAMES.md`.
+
+
 ## ⭐ Bohr — Selectel, рабочий сервер с 05.09.2026
 
 `ssh moskalenko@176.114.85.176` (пароль у Назара; ключи Назара/агента в authorized_keys).

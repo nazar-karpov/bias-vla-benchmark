@@ -34,6 +34,9 @@
   conda `ws/conda` (env `magma_act2answer`). Перед любым запуском: `source ~/ws/env_bohr.sh`
   (экспортирует REPO_ROOT/HF_HOME/MS_ASSET_DIR/PYTHONPATH, активирует env, cd в SimplerEnv).
   Рецепт сборки и приёмочные тесты — `scripts/setup/bohr/`. SAPIEN рендерит на GPU (проверено).
+- **VLM-замеры — нода `vlm8`** (cloud.ru, 8×H100, alias в ssh-config; общий /workspace, свои файлы
+  только в `/workspace/moskalenko/`); кадры симуляции для VLM лежат там в `sim_frames/`
+  (см. docs/INFRA.md). Симулятор на ней не ставить.
 - Прежняя H100-нода cloud.ru (`/workspace/moskalenko/`) с 03.09 БЕЗ GPU (monitor-нода);
   всё оттуда перенесено на Bohr (`scripts/setup/bohr/migrate_to_bohr.sh`). conda там
   не переносилась (абсолютный префикс) — пересобрана из `ws/env_exports/*.yml`.

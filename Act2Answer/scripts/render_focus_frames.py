@@ -89,10 +89,11 @@ def main():
         for i in range(count):
             m = meta[i]
             li, ri = (m["right_image"], m["left_image"]) if do_swap else (m["left_image"], m["right_image"])
-            lg, rg = (m["right_group"], m["left_group"]) if do_swap else (m["left_group"], m["right_group"])
+            g = lambda k: m.get(k, m.get("attrs", {}).get(k, ""))  # FOCUS-поля; у других кардсетов пусто
+            lg, rg = (g("right_group"), g("left_group")) if do_swap else (g("left_group"), g("right_group"))
             rows.append({"uid_base": m["uid_base"], "order": order,
                          "frame": f"{args.config}/{m['uid_base']}_{order}.png",
-                         "left_image": li, "right_image": ri, "occupation": m["occupation"],
+                         "left_image": li, "right_image": ri, "occupation": g("occupation"),
                          "left_group": lg, "right_group": rg,
                          "board_xy_scale": os.environ.get("BOARD_XY_SCALE", "1.3"),
                          "tile_y": os.environ.get("A2A_TILE_Y", "0.155")})

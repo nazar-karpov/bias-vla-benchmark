@@ -1,44 +1,42 @@
-# FOCUS × Act2Answer: первые кадры симуляции для двух раскладок плиток
+# FOCUS/REFLECT × Act2Answer: первые кадры симуляции для трёх раскладок плиток
 
-Кадры obs-камеры WidowX/Bridge-сцены (`3rd_view_camera`, 640×480 PNG) — ровно то, что видит
-VLA в первый шаг эпизода; модель не запускалась. На столе две плитки с фотографиями FOCUS
-(REFLECT, face-only counterfactuals), куб в схвате над центром стола.
+Кадры obs-камеры (`3rd_view_camera`, 640×480 PNG) Bridge-сцены WidowX в первый шаг эпизода,
+модель не запускалась. Две плитки с фотографиями FOCUS (face-only контрфактуалы), куб в схвате
+над центром стола.
 
-## Конфиги (подпапки)
+**Картинки:** 480 фото REFLECT/FOCUS → квадрат по лицу (Haar-каскад на `base.jpg` сцены),
+один бокс на сцену, чтобы пары оставались попиксельно параллельными вне лица (см. `crops.csv`).
+**Пары:** актуальные таблицы команды `focus_reflect/pairs/`: gender.tsv (500) + ethnicity.tsv
+(2500) + profession.tsv (3000) = **6000 пар**.
 
-| подпапка | масштаб плитки | сторона плитки | центры плиток, y | просвет | env |
-|---|---|---|---|---|---|
-| `a2a_default_s1p0_y0p155` | 1.0 (исходный Act2Answer) | 14.5 см | ±0.155 м | 16.5 см | `BOARD_XY_SCALE=1.0 A2A_TILE_Y=0.155` |
-| `andrey_s1p2_y0p14` | 1.2 (выбор А. Москаленко, 03.09) | 17.4 см | ±0.140 м | 10.6 см | `BOARD_XY_SCALE=1.2 A2A_TILE_Y=0.14` |
+> **Правка 08.09.2026 (эксп. 52).** Раньше кардсет строился из deprecated-манифеста
+> `focus_two_image_selection.csv` и содержал 2160 пар, из которых лишь 1200 есть в актуальных
+> таблицах, а 4800 актуальных пар не рендерились вовсе. Пересобрано с `pairs/*.tsv`.
+> Прежние кадры лежат на Bohr в `outputs/_deprecated_removed_backup/focus_frames_from_deprecated/`.
+
+## Конфиги
+| подпапка | масштаб плитки | сторона | центры плиток, y | env |
+|---|---|---|---|---|
+| `a2a_default_s1p0_y0p155` | 1.0 (исходный Act2Answer) | 14.5 см | ±0.155 м | `BOARD_XY_SCALE=1.0 A2A_TILE_Y=0.155` |
+| `andrey_s1p2_y0p14` | 1.2 (выбор А. Москаленко) | 17.4 см | ±0.140 м | `BOARD_XY_SCALE=1.2 A2A_TILE_Y=0.14` |
 | `confirm_s1p3_y0p155` | 1.3 (как в confirm-кардсетах VLA-прогонов) | 18.9 см | ±0.155 м | `BOARD_XY_SCALE=1.3 A2A_TILE_Y=0.155` |
 
-Оба конфига: обе плитки целиком в кадре (запас правой до края +11 px и +8 px), одна и та же
-камера, один сид (0), одинаковая поза робота.
-
 ## Файлы
-
-- `manifest.csv` — строка на (uid × конфиг), 25 920 строк. Колонки: `uid` (как в
-  `focus_two_image_selection.csv` / `focus_vlm_parallel_two_image_selection.csv` команды),
-  `config`, `frame` (путь относительно этой папки), `question_vla`, `question_vlm`,
-  `left_image`, `right_image` (что ЛЕЖИТ слева/справа на кадре), `occupation`, `left_group`,
-  `right_group`, `attribute`, `order` (ab/ba), `board_xy_scale`, `tile_y`.
-  Один кадр обслуживает 3 вопроса (income/education/safety): uid'ы с разным атрибутом
-  ссылаются на один и тот же PNG.
-- `<config>/<uid_base>_<ab|ba>.png` — 4 320 кадров на конфиг (2 160 пар × 2 порядка).
-- `<config>/frames.csv` — то же без вопросов.
-- `crops.csv` — как резались квадраты из прямоугольных фото FOCUS: один бокс на сцену
-  (min(W,H) со стороной, центр — по лицу Haar-каскадом на base.jpg; 44/48 сцен по base,
-  3 по медиане детекций вариантов, 1 центр кадра), потом 512×512. Пары остаются
-  попиксельно параллельными вне лица.
+- `manifest.csv` — 36000 строк = 6000 пар × ab/ba × 3 конфига: `pair_id` (= `pair_id` таблицы
+  команды), `source` (`tsv:<таблица>`), `config`, `order`, `frame`, `left_image`/`right_image`
+  (что ЛЕЖИТ слева/справа на кадре; для `ba` уже переставлено), `board_xy_scale`, `tile_y`,
+  `attr_*` (все колонки таблиц пар: gender_1/2, ethnicity_1/2, profession_1/2, identity_1/2,
+  same_identity и т.д.; пусто там, где колонки нет в исходной таблице).
+- `questions.tsv` — 155 вопросов (150 из общей таблицы команды + 5 из veri_emergency).
+  Задаются ВСЕ вопросы ко ВСЕМ парам: `source_dataset`/`source_format` — только происхождение
+  вопроса, не фильтр; все уже в парном формате («Put the cube…» / «Which image, A or B…»).
+  В манифест вопросы НЕ развёрнуты — кадр от вопроса не зависит, полный крест это 5.6 млн строк.
+- `<config>/<pair_id>_<ab|ba>.png`, `<config>/frames.csv`.
+- `crops.csv` — как получены квадраты.
 
 ## Как читать кадр
+Плитка слева на кадре = `left_image`, справа = `right_image`. У каждой пары есть оба порядка
+(`ab`/`ba`) — контроль позиционного крена.
 
-Плитка слева на кадре = `left_image`, справа = `right_image`. Для порядка `ba` картинки
-манифеста уже переставлены (симулятор физически меняет плитки местами). Контроль
-позиционного крена: у каждой пары есть оба порядка, `uid` отличается суффиксом.
-
-Скрипты (репо bias-vla-benchmark, `Act2Answer/scripts/`): `focus_square_crops.py` →
-`gen_focus_cardset.py` → `render_focus_frames.py` → `build_focus_frames_manifest.py`.
-
-
-**Дополнение (третий конфиг):** `confirm_s1p3_y0p155` — раскладка confirm-прогонов VLA (плитка 1.3, слоты ±0.155; правая плитка режется краем на ~2% площади, как и в тех прогонах). manifest.csv пересобран на 3 конфига: 38880 строк.
+Скрипты (репо, `Act2Answer/scripts/`): `focus_square_crops.py` → `gen_pairs_cardset.py` →
+`render_focus_frames.py` → `build_pair_frames_manifest.py`; раннер `scripts/setup/bohr/rerender_focus_tsv.sh`.

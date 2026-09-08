@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Полный конвейер «датасет с Drive → квадраты → кардсет → кадры двух раскладок → манифест».
 # Параметры: NAME MODE IMAGES_SRC PAIRS_TSV... (через запятую) [DEPRECATED_VLA] [DEPRECATED_VLM]
+# DEPRECATED_* с 08.09.2026 только для отчёта «сколько пар отброшено» — в кардсет и манифест
+# устаревшие пары НЕ попадают (см. docs/JOURNAL.md, эксп. 51).
 #   NAME        имя кардсета/папки кадров (pairs_frames, veri_frames, visbias_frames)
 #   MODE        square_images: none|pad|face|center
 #   IMAGES_SRC  ~/ws/datasets/<dataset>  (пути таблиц относительно него)
@@ -23,6 +25,6 @@ python $S/gen_pairs_cardset.py --name "$NAME" --pairs ${TSV//,/ } ${DVLA:+--depr
   > $HOME/ws/logs_${NAME}_default.log 2>&1 &
 wait
 python $S/build_pair_frames_manifest.py --assets-dir "$CS" --frames-root "$OUT" \
-  --configs a2a_default_s1p0_y0p155 andrey_s1p2_y0p14 ${DVLA:+--deprecated-vla $DVLA} ${DVLM:+--deprecated-vlm $DVLM}
+  --configs a2a_default_s1p0_y0p155 andrey_s1p2_y0p14
 cp "$SQ/crops.csv" "$OUT/crops.csv" 2>/dev/null
 echo "DATASET_FRAMES_DONE $NAME"

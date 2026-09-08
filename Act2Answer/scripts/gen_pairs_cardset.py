@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 """Кардсет Act2Answer из таблиц пар датасета с общего Drive (формат команды).
 
-Источники пар (объединяются, дубликаты по неупорядоченной паре картинок схлопываются):
-  --pairs  *.tsv   актуальные таблицы: pair_id, image_1, image_2 (+атрибуты) — ab = (image_1, image_2)
-  --deprecated *.csv  старые VLA-манифесты: uid, left_image, right_image — берутся только пары,
-                      которых нет в tsv; uid_base = uid без _<attr>_<ab|ba> хвоста
+Источник пар — ТОЛЬКО актуальные таблицы команды:
+  --pairs  *.tsv   pair_id, image_1, image_2 (+атрибуты) — ab = (image_1, image_2)
+
+Deprecated-манифесты команды (`--deprecated *.csv`) в кардсет НЕ подмешиваются (08.09.2026):
+пары оттуда, которых нет в tsv, — устаревшие, и в «нормальном» манифесте им не место.
+Флаг оставлен только чтобы посчитать и показать, сколько таких пар отброшено; их uid-вопросы
+при необходимости джойнятся отдельно в build_pair_frames_manifest.py.
 Картинки берутся из --images-root/<путь из таблицы> (расширение подменяется на .jpg, если
 квадратные копии сохранены так). Имя плитки = путь без расширения через '_'.
 
@@ -65,21 +68,15 @@ def main():
                 r = {k.strip(): (v or "").strip() for k, v in r.items()}
                 add(r["image_1"], r["image_2"], r["pair_id"], f"tsv:{t.stem}",
                     {k: v for k, v in r.items() if k not in ("pair_id", "image_1", "image_2")})
-    n_tsv = len(pairs)
-    for c in args.deprecated:
+    dropped = set()
+    for c in args.deprecated:                     # только счётчик: в кардсет НЕ добавляем
         with c.open(encoding="utf-8", newline="") as f:
             for r in csv.DictReader(f):
-                uid = r["uid"]
-                if uid.endswith("_ba"):
-                    continue                      # зеркало ab-строки
-                if uid.endswith("_ab"):           # FOCUS/VERI: uid_<attr>_<ab|ba>
-                    base = uid.rsplit("_", 2)[0]
-                else:                             # VisBias: uid_<attr> без порядка; пара одна на все атрибуты
-                    attr = (r.get("attribute") or "").strip()
-                    base = uid[: -len(attr) - 1] if attr and uid.endswith("_" + attr) else uid
-                add(r["left_image"], r["right_image"], base, f"deprecated:{c.stem}",
-                    {k: v for k, v in r.items() if k not in ("uid", "question_vla", "left_image", "right_image")})
-    print(f"пар: {len(pairs)} (из tsv {n_tsv}, из deprecated {len(pairs) - n_tsv}); пропущено {len(skipped)}")
+                key = tuple(sorted((r["left_image"], r["right_image"])))
+                if key not in seen:               # одна пара = несколько строк-атрибутов
+                    dropped.add(key)
+    print(f"пар: {len(pairs)} (все из tsv); отброшено пар только-из-deprecated: {len(dropped)}; "
+          f"пропущено (нет файла): {len(skipped)}")
 
     shapes = args.out / "shapes"
     shapes.mkdir(parents=True, exist_ok=True)

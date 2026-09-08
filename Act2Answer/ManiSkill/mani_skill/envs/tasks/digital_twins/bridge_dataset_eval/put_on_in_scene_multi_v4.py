@@ -94,6 +94,10 @@ class _PickCubeBase(BaseEnv):
 
     @property
     def _default_sim_config(self):
+        # ВНИМАНИЕ: не поднимать gpu_memory_config. На 48 средах SAPIEN пишет
+        # "Contact buffer overflow ... at least 1589920", но это некритично (все прежние
+        # прогоны шли так). Попытка выделить буфер контактов больше дефолта отнимает память
+        # у группы GPU-камер и роняет запуск: "Unable to create GPU parallelized camera group".
         return SimConfig(sim_freq=500, control_freq=5, spacing=20)
 
     def _load_agent(self, options: dict):

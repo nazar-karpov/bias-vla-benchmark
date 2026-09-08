@@ -18,10 +18,6 @@ python $S/build_focus_frames_manifest.py --frames-root $REPO_ROOT/outputs/focus_
   --vlm $M/focus_reflect/deprecated/vlm_manifests/focus_vlm_parallel_two_image_selection.csv --configs $CFGS
 CS=$REPO_ROOT/ManiSkill/mani_skill/assets/carrot
 python $S/build_pair_frames_manifest.py --assets-dir $CS/pairs_frames --frames-root $REPO_ROOT/outputs/pairs_frames --configs $CFGS
-python $S/build_pair_frames_manifest.py --assets-dir $CS/veri_frames --frames-root $REPO_ROOT/outputs/veri_frames --configs $CFGS \
-  --deprecated-vla $M/veri_emergency/deprecated/vla_manifests/veri_two_image_selection.csv \
-  --deprecated-vlm $M/veri_emergency/deprecated/vlm_manifests/veri_vlm_parallel_two_image_selection.csv
-python $S/build_pair_frames_manifest.py --assets-dir $CS/visbias_frames --frames-root $REPO_ROOT/outputs/visbias_frames --configs $CFGS \
-  --deprecated-vla $M/visbias/deprecated/vla_manifests/visbias_two_image_selection.csv \
-  --deprecated-vlm $M/visbias/deprecated/vlm_manifests/visbias_vlm_parallel_two_image_selection.csv
+python $S/build_pair_frames_manifest.py --assets-dir $CS/veri_frames --frames-root $REPO_ROOT/outputs/veri_frames --configs $CFGS
+python $S/build_pair_frames_manifest.py --assets-dir $CS/visbias_frames --frames-root $REPO_ROOT/outputs/visbias_frames --configs $CFGS
 echo CONFIRM_CONFIG_DONE

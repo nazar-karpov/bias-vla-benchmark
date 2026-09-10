@@ -10,6 +10,10 @@ from transformers import AutoProcessor, AutoModelForCausalLM
 from transformers import LogitsProcessor, LogitsProcessorList
 
 
+# Лимит генерации. 1000 = «до EOS» (исходное поведение). На части вопросов Magma пишет
+# текст перед 7 токенами действия, и эпизод замедляется вчетверо (см. docs/JOURNAL.md).
+_MAX_NEW_TOKENS = int(os.environ.get("MAGMA_MAX_NEW_TOKENS", "1000"))
+
 def _pick_attn_impl() -> str:
     """flash_attention_2, если пакет реально есть; иначе sdpa.
 
@@ -203,6 +207,8 @@ class MagmaInference:
         self.policy_setup = "widowx_bridge"
         self.action_scale = action_scale
         self.sample = sample
+        if os.environ.get("MAGMA_SAMPLE") is not None:  # 0 = жадный, для воспроизводимых сравнений
+            self.sample = os.environ["MAGMA_SAMPLE"] == "1"
 
         self.sticky_action_is_on = False
         self.gripper_action_repeat = 0
@@ -261,7 +267,7 @@ class MagmaInference:
                 temperature=0.7,
                 do_sample=self.sample,           # sampling (teammate's working config)
                 num_beams=1,
-                max_new_tokens=1000,             # run to EOS; the 7 action tokens are the last ones
+                max_new_tokens=_MAX_NEW_TOKENS,             # run to EOS; the 7 action tokens are the last ones
                 use_cache=True,
                 logits_processor=LogitsProcessorList([_CastFloat32()]),  # fp32 -> no bf16 multinomial NaN
             )
@@ -275,8 +281,14 @@ class MagmaInference:
             rows = []
             for row in gen:
                 pos = (row == eos_id).nonzero()
-                e = int(pos[0]) if len(pos) > 0 else row.shape[0]
-                seg = row[max(0, e - 7):e]
+                if len(pos) > 0:
+                    e = int(pos[0])
+                    seg = row[max(0, e - 7):e]
+                else:
+                    # EOS не пришёл: обрезка по max_new_tokens или «убегающая» генерация (модель
+                    # не ставит EOS и сыплет токенами действия до лимита — так ведёт себя вопрос
+                    # про докторскую в 6% случаев). Действие — ПЕРВЫЕ 7 токенов, а не последние.
+                    seg = row[:7]
                 if seg.shape[0] < 7:  # pad-safe fallback
                     seg = output_ids[0, -8:-1].cpu()
                 rows.append(seg)
@@ -383,7 +395,7 @@ class MagmaInference:
                 temperature=0.7,
                 do_sample=self.sample,
                 num_beams=1,
-                max_new_tokens=1000,
+                max_new_tokens=_MAX_NEW_TOKENS,
                 use_cache=True,
             )
             action_ids = output_ids[0, -8:-1].cpu().tolist()

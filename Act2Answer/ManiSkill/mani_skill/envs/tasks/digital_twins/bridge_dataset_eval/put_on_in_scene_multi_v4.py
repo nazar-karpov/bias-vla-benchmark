@@ -293,6 +293,9 @@ def build_colorful_cube_my(
     builder = scene.create_actor_builder()
 
     if add_collision:
+        # NB: прямое присвоение _mass SAPIEN игнорирует — _auto_inertial остаётся True, и масса
+        # считается по плотности формы (куб 3 см ~27 г). Строка из исходника — мёртвый код; массу
+        # задаёт только set_mass_and_inertia (проверено по исходникам SAPIEN 10.09.2026).
         builder._mass = 0.000001
         cube_material = sapien.pysapien.physx.PhysxMaterial(
             static_friction=50, dynamic_friction=30, restitution=0
@@ -617,7 +620,17 @@ class Act2AnswerV4(_PickCubeBase):
                 visual_file = str(path / "textured.glb")
         builder.add_visual_from_file(filename=visual_file, scale=scale_xyz)
         builder.initial_pose = pose
-        actor = builder.build(name=name)
+        # Тип тела плитки. По умолчанию динамическое — как во всех прогонах до 10.09.2026.
+        # Динамическая пластина 6 мм продавливается захватом, прижимающим к ней куб, и солвер
+        # выстреливает куб и саму плитку (телепорты, см. docs/JOURNAL.md). kinematic неподвижна
+        # для столкновений, но переставляется set_pose при сбросе; static в GPU-симе не переставить.
+        body = os.environ.get("A2A_TILE_BODY", "dynamic")
+        if body == "kinematic":
+            actor = builder.build_kinematic(name=name)
+        elif body == "static":
+            actor = builder.build_static(name=name)
+        else:
+            actor = builder.build(name=name)
         return actor
 
     def _build_cubes(self):

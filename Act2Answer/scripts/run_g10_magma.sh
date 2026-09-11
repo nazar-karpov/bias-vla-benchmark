@@ -43,7 +43,12 @@ print(len(json.load(open(sys.argv[1]))))
 PY
 )
 END=${END:-$TOTAL}
-NAME="g10-${ASSETS}-${ORDER}"
+# Префикс имени: у Magma исторически «g10-» (первый прогон программы), у остальных моделей
+# «g10-<vla>-», чтобы шарды разных моделей не легли в одни папки.
+if [ "$VLA" = magma ]; then PREFIX="g10"; else PREFIX="g10-${VLA}"; fi
+NAME="${PREFIX}-${ASSETS}-${ORDER}"
+# Доп. аргументы eval.py для конкретной модели (InternVLA: --vla-path <ckpt>)
+VLA_ARGS=${VLA_ARGS:-}
 START=$(python - "$REPO_ROOT/outputs" "$NAME" "$SHARD" "$START0" "$END" <<'PY'
 import os, sys
 out, name, shard, s0, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
@@ -76,7 +81,7 @@ fi
 cd $REPO_ROOT/SimplerEnv
 python -u -m simpler_env.eval --vla "$VLA" --assets "$ASSETS" \
   --start-id "$START" --count "$REMAIN" --shard-size "$SHARD" --buffer-inferbatch "$SHARD" \
-  "${NM[@]}" "${extra[@]}" < /dev/null >> "$LOG" 2>&1
+  "${NM[@]}" "${extra[@]}" $VLA_ARGS < /dev/null >> "$LOG" 2>&1
 rc=$?
 echo "DONE_G10 $(date -u) rc=$rc vla=$VLA assets=$ASSETS order=$ORDER [$START0,$END)" | tee -a "$LOG"
 exit $rc

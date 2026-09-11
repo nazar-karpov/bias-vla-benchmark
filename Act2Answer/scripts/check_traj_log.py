@@ -71,6 +71,14 @@ def check_shard(d, sep):
     if t.shape != c.shape or g.shape != (b, T):
         rep["problems"].append(f"формы не сходятся: cube {c.shape} tcp {t.shape} grasped {g.shape}")
     for k in EXTENDED:
+        if k == "action":
+            # действий на эпизод episode_len (80), а кадров T = action_t0 + 80:
+            # первые action_t0 кадров делает reset (скриптовый захват куба)
+            if k in keys:
+                t0 = int(z["action_t0"]) if "action_t0" in keys else T - z[k].shape[1]
+                if z[k].shape[0] != b or z[k].shape[1] + t0 != T:
+                    rep["problems"].append(f"action формы {z[k].shape} при T={T}, action_t0={t0}: не сходится")
+            continue
         if k in keys and z[k].shape[:2] != (b, T):
             rep["problems"].append(f"{k} формы {z[k].shape}, ждём ({b},{T},…)")
     if len(ids) != b:
@@ -123,7 +131,11 @@ def main():
                 ext_missing[k] = ext_missing.get(k, 0) + 1
         starts = [r["start"] for r in reps if r["start"] is not None]
         gaps = []
-        if len(starts) > 1:
+        # дыры в нумерации сообщаем только для ЗАКОНЧЕННОГО прогона (свежему шарду > 2 ч):
+        # пока идут параллельные диапазоны, недосчитанные шарды — не ошибка
+        import time
+        newest = max(os.path.getmtime(d) for d in dirs)
+        if len(starts) > 1 and time.time() - newest > 7200:
             step = int(np.median(np.diff(starts)))
             gaps = [s for s in range(starts[0], starts[-1], step) if s not in set(starts)]
         print(f"\n== {args.run}-{order}: шардов {len(reps)}, эпизодов {n_eps}, "

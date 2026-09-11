@@ -25,6 +25,10 @@ ulimit -n 65536 || echo "ВНИМАНИЕ: не удалось поднять ul
 source $HOME/ws/env_bohr.sh                    # REPO_ROOT, HF_HOME, MS_ASSET_DIR, conda, cd SimplerEnv
 export CUDA_VISIBLE_DEVICES=$GPU
 export TOKENIZERS_PARALLELISM=false PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+# ⚠ 11.09.2026, инцидент h100q 19:31 UTC: без лимита torch/OMP заводят по 294 потока на процесс
+# (os.cpu_count()=224), 4 процесса на квоте 48 ядер → троттлинг 100 % периодов, шард ×5 медленнее.
+# С 10 потоками процесс шёл вдвое быстрее соседей при 121 % CPU вместо 1300 %.
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-10} MKL_NUM_THREADS=${MKL_NUM_THREADS:-10}
 export BOARD_XY_SCALE=1.2 A2A_TILE_Y=0.14
 export A2A_TRAJ_LOG=1 A2A_SAVE_VIDEO=0
 export MAGMA_MAX_NEW_TOKENS=${MAGMA_MAX_NEW_TOKENS:-8}

@@ -36,10 +36,14 @@ case "$NODE" in
     chain 3 focus_g10:swap:2496:5000   pairs_g10:swap:480:1000
     ;;
   B)
-    chain 0 visbias_g10:noswap:0:2496
-    chain 1 visbias_g10:noswap:2496:5000
-    chain 2 visbias_g10:swap:0:2496
-    chain 3 visbias_g10:swap:2496:5000
+    # h100q2 (11.09.2026): на картах 1 и 3 заклинил Vulkan-рендер (даже 64×64 виснет),
+    # CUDA-счёт на них жив. Поэтому пары карт: процессу видны две, run.py кладёт
+    # симулятор+рендер на первую видимую (здоровую 0/2), модель — на вторую (1/3).
+    # По два процесса на пару: [0,2496) и [2496,5000) на каждый порядок.
+    chain 0,1 visbias_g10:noswap:0:2496
+    chain 0,1 visbias_g10:noswap:2496:5000
+    chain 2,3 visbias_g10:swap:0:2496
+    chain 2,3 visbias_g10:swap:2496:5000
     ;;
   *) echo "NODE=A|B"; exit 1;;
 esac

@@ -201,6 +201,11 @@ class MagmaInference:
             trust_remote_code=True,
         )
         self._fix_vision_layerscale(model_name)
+        # Устройство МОДЕЛИ. При двух видимых картах run.py грузит политику на cuda:1,
+        # а симулятор и рендер живут на cuda:0 (раскладка «рендер на здоровой карте,
+        # инференс на карте с заклинившим Vulkan», h100q2 11.09.2026). Входы поэтому
+        # кладём на self.model_device, а не на "cuda" (= cuda:0).
+        self.model_device = torch.device(f"cuda:{device_id}")
 
         self.task_description = None
 
@@ -253,7 +258,7 @@ class MagmaInference:
         inputs = self.processor(images=pil_images, texts=prompts, return_tensors="pt", padding=True)
         # move to model device; BatchFeature.to(dtype) casts float tensors (pixel_values) to
         # bf16 and leaves integer input_ids untouched (same as step_one).
-        inputs = inputs.to("cuda").to(torch.float16)
+        inputs = inputs.to(self.model_device).to(torch.float16)
         # Magma expects pixel_values (B, num_crops, C, H, W) and image_sizes (B, num_crops, 2).
         # The batched processor returns (B, C, H, W) and (B, 2); add the num_crops=1 axis
         # (step_one does the equivalent unsqueeze(0) for the single-image case).
@@ -381,7 +386,7 @@ class MagmaInference:
         inputs = self.processor(images=image, texts=prompt, return_tensors="pt")
         inputs["pixel_values"] = inputs["pixel_values"].unsqueeze(0)
         inputs["image_sizes"] = inputs["image_sizes"].unsqueeze(0)
-        inputs = inputs.to("cuda").to(torch.float16)
+        inputs = inputs.to(self.model_device).to(torch.float16)
         # Magma expects pixel_values (B, num_crops, C, H, W) and image_sizes (B, num_crops, 2).
         # The batched processor returns (B, C, H, W) and (B, 2); add the num_crops=1 axis
         # (step_one does the equivalent unsqueeze(0) for the single-image case).

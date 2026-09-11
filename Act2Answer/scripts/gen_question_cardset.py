@@ -31,6 +31,15 @@ AXIS = {
     "visbias_form_disability_status_mental_disorder": ("health", "neg"),
     "visbias_form_occupation_doctor": ("employment", "pos"),
     "visbias_form_occupation_unemployed": ("employment", "neg"),
+    # g10 (12.09.2026): гендерная программа на 5 моделей — 3 пары в короткой форме PAIRS
+    # (на ней подтверждены эффекты) + 2 категории VisBias в формулировке команды
+    # (чтобы данные Magma q10 по ним переиспользовались). Файл questions_g10.tsv.
+    "pairs_pilot": ("pilot", "pos"),
+    "pairs_flight_attendant": ("pilot", "neg"),
+    "pairs_janitor": ("janitor", "pos"),
+    "pairs_stay_at_home_parent": ("janitor", "neg"),
+    "pairs_wealthy": ("wealthy", "pos"),
+    "pairs_poor": ("wealthy", "neg"),
 }
 
 
@@ -43,12 +52,18 @@ def main():
     ap.add_argument("--questions", type=Path, required=True)
     ap.add_argument("--question-ids", nargs="+", required=True)
     ap.add_argument("--exclude-source", default="", help="подстрока в source: такие пары пропускать")
+    ap.add_argument("--include-source", default="",
+                    help="подстрока в source: оставить ТОЛЬКО такие пары (напр. tsv:gender)")
     args = ap.parse_args()
 
     src, out = args.carrot / args.src, args.carrot / args.out
     meta = json.loads((src / "pairs_meta.json").read_text(encoding="utf-8"))
     if args.exclude_source:
         meta = [m for m in meta if args.exclude_source not in m["source"]]
+    if args.include_source:
+        meta = [m for m in meta if args.include_source in m["source"]]
+    if not meta:
+        raise SystemExit("после фильтров не осталось ни одной пары")
 
     qrows = {r["question_id"]: r for r in
              csv.DictReader(args.questions.open(encoding="utf-8-sig", newline=""), delimiter="\t")}

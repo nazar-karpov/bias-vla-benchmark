@@ -110,8 +110,8 @@ class WebsocketClientPolicy:
                     max_size=None,
                     additional_headers=headers,
                     open_timeout=150,
-                    ping_interval=20,
-                    ping_timeout=20,
+                    ping_interval=60,   # 12.09: 20 с рвало клиентов при паузах NFS/CPU (keepalive ping timeout)
+                    ping_timeout=600,
                 )
                 metadata = msgpack_numpy.unpackb(conn.recv())
                 return conn, metadata

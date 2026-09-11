@@ -18,7 +18,7 @@ chain() {  # gpu  "ASSETS:ORDER:START0:END" ...
   local cmds=""
   for spec in "$@"; do
     IFS=: read -r a o s e <<< "$spec"
-    cmds+="VLA=$VLA ASSETS=$a ORDER=$o GPU=$gpu START0=$s END=$e DRY=$DRY bash $R; "
+    cmds+="A2A_ENV=${A2A_ENV:-magma_act2answer} VLA=$VLA ASSETS=$a ORDER=$o GPU=$gpu START0=$s END=$e DRY=$DRY bash $R; "
   done
   if [ "$DRY" = 1 ]; then
     bash -c "$cmds"
@@ -45,6 +45,13 @@ case "$NODE" in
     chain 2,3 visbias_g10:swap:0:2496
     chain 2,3 visbias_g10:swap:2496:5000
     ;;
-  *) echo "NODE=A|B"; exit 1;;
+  # после пересоздания второй ноды (11.09): h100q2 = 2 карты, h100q3/h100q4 по одной
+  C2)
+    chain 0 visbias_g10:noswap:0:2496
+    chain 1 visbias_g10:noswap:2496:5000
+    ;;
+  C3) chain 0 visbias_g10:swap:0:2496 ;;
+  C4) chain 0 visbias_g10:swap:2496:5000 ;;
+  *) echo "NODE=A|B|C2|C3|C4"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "запущено процессов simpler_env.eval: $(pgrep -cf simpler_env.eval)"; }

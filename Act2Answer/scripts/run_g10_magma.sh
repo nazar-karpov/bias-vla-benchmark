@@ -22,7 +22,8 @@ VLA=${VLA:-magma}
 
 ulimit -n 65536 || echo "ВНИМАНИЕ: не удалось поднять ulimit -n"
 
-source $HOME/ws/env_bohr.sh                    # REPO_ROOT, HF_HOME, MS_ASSET_DIR, conda, cd SimplerEnv
+export A2A_ENV=${A2A_ENV:-magma_act2answer}    # conda-окружение клиента (spatialvla_act2answer для SpatialVLA)
+source $HOME/ws/env_bohr.sh                    # REPO_ROOT, HF_HOME, MS_ASSET_DIR, conda ($A2A_ENV), cd SimplerEnv
 export CUDA_VISIBLE_DEVICES=$GPU
 export TOKENIZERS_PARALLELISM=false PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # ⚠ 11.09.2026, инцидент h100q 19:31 UTC: без лимита torch/OMP заводят по 294 потока на процесс

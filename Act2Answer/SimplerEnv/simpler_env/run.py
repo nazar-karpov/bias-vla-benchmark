@@ -475,6 +475,11 @@ class Runner:
                         cube_xyz=torch.stack(_tl["cube_xyz"]).permute(1, 0, 2).numpy(),
                         tcp_xyz=torch.stack(_tl["tcp_xyz"]).permute(1, 0, 2).numpy(),
                         grasped=torch.stack(_tl["grasped"]).permute(1, 0).numpy(),
+                        # ⬇ 11.09.2026: поля для интегральных метрик. Пишем только
+                        # если среда их накопила, чтобы не падать на старых средах.
+                        **{k: torch.stack(_tl[k]).permute(1, 0, 2).numpy()
+                           for k in ("boardL_xy", "boardR_xy", "gripper_q", "qvel")
+                           if _tl.get(k)},
                         boardL_y=np.array([last_info[i].get("boardL_y", np.nan)
                                            for i in range(self.args.num_envs)], dtype=np.float32),
                         boardR_y=np.array([last_info[i].get("boardR_y", np.nan)

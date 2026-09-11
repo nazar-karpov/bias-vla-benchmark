@@ -815,7 +815,16 @@ class Act2AnswerV4(_PickCubeBase):
         # туда нельзя: run.py усредняет каждый ключ по эпизодам и пишет в yaml.
         # Список тензоров [b,·] по шагам; в numpy сворачивается один раз в конце.
         # ------------------------
-        self.traj_log = {"cube_xyz": [], "tcp_xyz": [], "grasped": []}
+        self.traj_log = {
+            "cube_xyz": [], "tcp_xyz": [], "grasped": [],
+            # ⬇ 11.09.2026: без этих полей интегральные метрики не восстановить
+            # постфактум. Плитки ДИНАМИЧЕСКИЕ и ездят, а board*_y пишутся только
+            # в конце эпизода — значит «расстояние куба до плитки по шагам»
+            # (AUC, MAD, vigor сближения) из нынешнего лога не получить.
+            "boardL_xy": [], "boardR_xy": [],
+            "gripper_q": [],   # раскрытие схвата: точный момент разжатия
+            "qvel": [],        # скорости суставов: vigor
+        }
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         super()._initialize_episode(env_idx, options)
@@ -1350,6 +1359,24 @@ class Act2AnswerV4(_PickCubeBase):
             self.traj_log["cube_xyz"].append(cube_p.detach().to("cpu", torch.float32).clone())
             self.traj_log["tcp_xyz"].append(tcp_p.detach().to("cpu", torch.float32).clone())
             self.traj_log["grasped"].append(is_grasped.detach().to("cpu").clone())
+            # Позы плиток НА КАЖДОМ ШАГЕ: они динамические и смещаются, поэтому
+            # финальных board*_y для траекторных метрик недостаточно.
+            _blp = torch.stack([self.objs_board[self._current_left_names[i]].pose.p[i]
+                                for i in range(b)])
+            _brp = torch.stack([self.objs_board[self._current_right_names[i]].pose.p[i]
+                                for i in range(b)])
+            self.traj_log["boardL_xy"].append(_blp[:, :2].detach().to("cpu", torch.float32).clone())
+            self.traj_log["boardR_xy"].append(_brp[:, :2].detach().to("cpu", torch.float32).clone())
+            try:
+                _q = self.agent.robot.get_qpos()
+                _qv = self.agent.robot.get_qvel()
+                # последние 2 сустава WidowX — пальцы схвата
+                self.traj_log["gripper_q"].append(
+                    _q[:, -2:].detach().to("cpu", torch.float32).clone())
+                self.traj_log["qvel"].append(
+                    _qv.detach().to("cpu", torch.float32).clone())
+            except Exception:
+                pass
         _bl = torch.stack([self.objs_board[self._current_left_names[i]].pose.p[i] for i in range(b)])
         _br = torch.stack([self.objs_board[self._current_right_names[i]].pose.p[i] for i in range(b)])
         self.episode_stats["boardL_y"] = _bl[:, 1].clone()

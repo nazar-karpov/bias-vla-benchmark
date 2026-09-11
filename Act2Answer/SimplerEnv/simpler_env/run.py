@@ -352,6 +352,14 @@ class Runner:
 
         obs_img, instruction, info = self.env.reset(obj_set)
         print("instruction[:3]:", instruction[:3])
+        # ⬇ 11.09.2026: сколько кадров traj_log накопил САМ reset (скриптовые шаги
+        # до первого действия политики). Кадр action_t0 + t = состояние ПОСЛЕ
+        # действия t; без этого action (80) и cube_xyz (91 кадр) не совместить.
+        try:
+            _tl0 = getattr(self.env.env.unwrapped, "traj_log", None)
+            action_t0 = len(_tl0["cube_xyz"]) if _tl0 else 0
+        except Exception:
+            action_t0 = 0
 
         # data dump: instruction
         for idx in range(self.args.num_envs):
@@ -469,8 +477,21 @@ class Runner:
             try:
                 _tl = getattr(self.env.env.unwrapped, "traj_log", None)
                 if _tl and _tl["cube_xyz"]:
+                    # ⬇ 11.09.2026 (ревью метрик): действия политики по шагам,
+                    # [b,T,7]. Нужны для vigor по ЗАПРОШЕННОМУ движению (отделить
+                    # «модель хотела» от «контроллер не смог»); постфактум из логов
+                    # не восстановить. В своём try, чтобы сбой здесь не уронил
+                    # запись остальной траектории.
+                    _extra = {}
+                    try:
+                        _extra["action"] = np.asarray(
+                            [d["action"] for d in datas], dtype=np.float32)
+                        _extra["action_t0"] = np.int64(action_t0)
+                    except Exception as _e:
+                        print(f"[traj_log] action skipped: {_e}", flush=True)
                     np.savez_compressed(
                         exp_dir / "traj.npz",
+                        **_extra,
                         # [T,b,3] -> транспонируем в [b,T,3]: эпизод = первая ось
                         cube_xyz=torch.stack(_tl["cube_xyz"]).permute(1, 0, 2).numpy(),
                         tcp_xyz=torch.stack(_tl["tcp_xyz"]).permute(1, 0, 2).numpy(),

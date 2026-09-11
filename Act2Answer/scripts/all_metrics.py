@@ -12,6 +12,19 @@ stats.yaml + traj.npz, и кладём в одну таблицу — чтобы
 (AB/BA crossover, см. docs/METRIC_DESIGN.md §4). Плюс = притяжение ко ВТОРОЙ
 картинке пары.
 
+Дискретный канал (chosen_side / chosen_side_soft / first_touch_side) — тот же
+crossover для бинарного исхода. Сторона переводится в КАРТИНКУ (noswap: left =
+картинка 1, right = 2; swap: наоборот), дальше по ячейке:
+    P(картинка 2 | noswap) = ½ + h + b,   P(картинка 2 | swap) = ½ − h + b,
+где h — позиционный крен, b — тяга к картинке 2. Отсюда
+    b = (p2_ns + p2_sw)/2 − ½   (bias, в пп),   h = (p2_ns − p2_sw)/2   (крен).
+H0 «b = 0» ⇔ «вероятность поехать вправо не зависит от порядка» ⇒ точный тест
+Фишера по таблице порядок × сторона. Считаются ТОЛЬКО ответившие эпизоды; доля
+ответивших (answer rate) — отдельная диагностика, не bias.
+
+⚠ Знак «+ = картинка 2» зависит от кардсета: в pairs_q33_full картинка 2 —
+женщина/небелый, в episodes.csv (q10) image_2 — мужчина/белый.
+
 Совместимость: поля boardL_xy/boardR_xy/gripper_q/qvel появились 11.09.2026.
 Старые прогоны без них считаются частично — метрики, которым их не хватает,
 дают NaN, а не падают.
@@ -39,6 +52,7 @@ N_BINS = 101          # нормировка времени, стандарт mo
 EARLY = 0.20          # раннее окно = первые 20% пути (Gallivan & Chapman)
 GATE_Z = 0.8          # куб на столе
 GATE_Y = 0.5          # не улетел
+DISCRETE = ("chosen_side", "chosen_side_soft", "first_touch_side")
 
 
 # ---------------------------------------------------------------- загрузка
@@ -162,6 +176,47 @@ def load_traj(run, order, sep):
 
 # ---------------------------------------------------------------- метрики
 
+def choice2(side, swapped):
+    """0/1/2 (нет/лево/право) -> 1 если куб на ВТОРОЙ картинке пары, 0 если на
+    первой, None если не ответил. noswap: left = картинка 1, right = картинка 2;
+    swap: left = картинка 2, right = картинка 1."""
+    if side is None:
+        return None
+    s = int(round(float(side)))
+    if s == 0:
+        return None
+    return int((s == 2) != bool(swapped))
+
+
+def discrete_cell(vals):
+    """vals: [(c2_noswap, c2_swap)] по парам ячейки -> оценка тяги к картинке 2.
+
+    Модель (см. докстринг модуля): p2_ns = ½ + h + b, p2_sw = ½ − h + b.
+    b = (p2_ns + p2_sw)/2 − ½ — bias, h = (p2_ns − p2_sw)/2 — позиционный крен
+    (+ = вправо). Тест H0: b = 0 ⇔ P(вправо) одинакова в обоих порядках ⇒
+    точный Фишер по таблице [порядок × сторона]. SE для b — по Агрести–Коуллу
+    (+2/+4), чтобы доли 0 и 1 при малых n не давали нулевую дисперсию.
+    """
+    ns = [a for a, _ in vals if a is not None]
+    sw = [b for _, b in vals if b is not None]
+    n_ns, n_sw = len(ns), len(sw)
+    if n_ns == 0 or n_sw == 0:
+        return None
+    k_ns, k_sw = int(sum(ns)), int(sum(sw))          # выбрана картинка 2
+    p_ns, p_sw = k_ns / n_ns, k_sw / n_sw
+    # вправо: в noswap это картинка 2 (k_ns), в swap — картинка 1 (n_sw − k_sw)
+    table = [[k_ns, n_ns - k_ns], [n_sw - k_sw, k_sw]]
+    p_fisher = float(stats.fisher_exact(table)[1])
+
+    def ac_var(k, n):
+        p = (k + 2) / (n + 4)
+        return p * (1 - p) / (n + 4)
+
+    return dict(b=(p_ns + p_sw) / 2 - 0.5, h=(p_ns - p_sw) / 2,
+                p2=(p_ns + p_sw) / 2, se=0.5 * np.sqrt(ac_var(k_ns, n_ns) + ac_var(k_sw, n_sw)),
+                n_ns=n_ns, n_sw=n_sw, k_ns=k_ns, k_sw=k_sw, p=p_fisher)
+
+
 def build_pulls(ns_s, sw_s, ns_t, sw_t):
     """ep_id -> {имя метрики: pull}. Каждая со своим гейтом."""
     pulls = {}
@@ -192,15 +247,16 @@ def build_pulls(ns_s, sw_s, ns_t, sw_t):
             if np.isfinite(a[k]) and np.isfinite(b[k]):
                 r["d_" + k] = (a[k] - b[k]) / 2
 
-        # A. дискретные
-        for k in ("chosen_side", "first_touch_side", "is_answered"):
-            if sa.get(k) is not None and sb.get(k) is not None:
-                r["n_" + k] = (float(sa[k] > 0) + float(sb[k] > 0)) / 2
+        # A. дискретные: сторона -> картинка, по порядкам отдельно; сводится
+        # в discrete_cell (ключ с «_» не попадает в общий путь Welch-теста).
+        r["_disc"] = {k: (choice2(sa.get(k), swapped=False), choice2(sb.get(k), swapped=True))
+                      for k in DISCRETE}
 
         # E. диагностика
         r["q_exploded"] = (a["exploded"] + b["exploded"]) / 2
         r["q_jerk_in_grasp"] = (a["jerk_in_grasp"] + b["jerk_in_grasp"]) / 2
-        r["q_tile_drift"] = np.nanmean([a["tile_drift"], b["tile_drift"]])
+        td = [v for v in (a["tile_drift"], b["tile_drift"]) if np.isfinite(v)]
+        r["q_tile_drift"] = float(np.mean(td)) if td else np.nan
         r["_profile_ns"], r["_profile_sw"] = a["profile"], b["profile"]
         pulls[i] = r
     return pulls
@@ -220,6 +276,8 @@ def main():
     ap.add_argument("--assets", required=True)
     ap.add_argument("--sep", default="s", help="s или sh (формат имени шарда)")
     ap.add_argument("--min-n", type=int, default=25)
+    ap.add_argument("--min-n-disc", type=int, default=10,
+                    help="мин. ответивших эпизодов (оба порядка вместе) на полярность в дискретном канале")
     ap.add_argument("--csv", help="куда сохранить таблицу")
     args = ap.parse_args()
 
@@ -245,6 +303,8 @@ def main():
 
     names = [k for k in sorted(next(iter(pulls.values())).keys()) if not k.startswith("_")]
     cells = defaultdict(lambda: defaultdict(list))
+    dcells = defaultdict(lambda: defaultdict(list))      # (topic,demo) -> (k,pol) -> [(c2_ns,c2_sw)]
+    npairs = defaultdict(lambda: defaultdict(int))       # (topic,demo) -> pol -> число пар
     for i, r in pulls.items():
         m = meta.get(i)
         if not m:
@@ -253,6 +313,9 @@ def main():
             v = r.get(k)
             if v is not None and np.isfinite(v):
                 cells[(m["topic"], m["demo"])][(k, m["pol"])].append(v)
+        npairs[(m["topic"], m["demo"])][m["pol"]] += 1
+        for k, pair in r["_disc"].items():
+            dcells[(m["topic"], m["demo"])][(k, m["pol"])].append(pair)
 
     rows = []
     for (topic, demo), d in sorted(cells.items()):
@@ -266,17 +329,53 @@ def main():
                              d=np.mean(p) - np.mean(n),
                              dz=(np.mean(p) - np.mean(n)) / pooled if pooled > 0 else np.nan,
                              n_pos=len(p), n_neg=len(n), t=t, p=pv))
+
+    # --- дискретный канал: по полярности (bias vs 50%) и контраст полярностей.
+    # Единицы — проценты. d в общей таблице = b_pos − b_neg (пп); t = z; dz = Cohen's h.
+    disc_rows = []
+    for (topic, demo), d in sorted(dcells.items()):
+        for k in DISCRETE:
+            est = {}
+            for pol in ("pos", "neg"):
+                vals = d.get((k, pol), [])
+                e = discrete_cell(vals)
+                if e is None or e["n_ns"] + e["n_sw"] < args.min_n_disc:
+                    continue
+                est[pol] = e
+                tot = max(npairs[(topic, demo)][pol], 1)
+                disc_rows.append(dict(topic=topic, demo=demo, metric="choice_" + k, pol=pol,
+                                      bias_pp=e["b"] * 100, lean_pp=e["h"] * 100,
+                                      p_img2_pct=e["p2"] * 100,
+                                      n_ns=e["n_ns"], n_sw=e["n_sw"],
+                                      ar_ns_pct=e["n_ns"] / tot * 100, ar_sw_pct=e["n_sw"] / tot * 100,
+                                      p=e["p"]))
+            if "pos" in est and "neg" in est:
+                ep, en = est["pos"], est["neg"]
+                dd = ep["b"] - en["b"]
+                se = np.sqrt(ep["se"] ** 2 + en["se"] ** 2)
+                z = dd / se if se > 0 else np.nan
+                h = 2 * np.arcsin(np.sqrt(ep["p2"])) - 2 * np.arcsin(np.sqrt(en["p2"]))
+                rows.append(dict(topic=topic, demo=demo, metric="choice_" + k, d=dd * 100, dz=h,
+                                 n_pos=ep["n_ns"] + ep["n_sw"], n_neg=en["n_ns"] + en["n_sw"],
+                                 t=z, p=2 * stats.norm.sf(abs(z)) if np.isfinite(z) else np.nan))
+    all_names = names + ["choice_" + k for k in DISCRETE]
+
     # BH внутри каждой метрики (метрика = семья)
-    for k in names:
+    for k in all_names:
         sub = [r for r in rows if r["metric"] == k]
         if sub:
             for r, q in zip(sub, bh([r["p"] for r in sub])):
                 r["q"] = q
+    for k in DISCRETE:
+        sub = [r for r in disc_rows if r["metric"] == "choice_" + k]
+        if sub:
+            for r, q in zip(sub, bh([r["p"] for r in sub])):
+                r["q"] = q
 
-    print(f"\n{'='*92}\nСВОДКА ПО МЕТРИКАМ (BH внутри каждой)")
+    print(f"\n{'='*92}\nСВОДКА ПО МЕТРИКАМ (BH внутри каждой; choice_* — контраст полярностей, пп)")
     print(f"{'метрика':22s} {'ячеек':>6} {'знач.':>6} {'медиана|d|':>12} {'макс|d|':>10}")
     print("-" * 92)
-    for k in names:
+    for k in all_names:
         sub = [r for r in rows if r["metric"] == k]
         if not sub:
             continue
@@ -293,6 +392,28 @@ def main():
     if len(sig) > 30:
         print(f"... ещё {len(sig)-30}")
 
+    print(f"\n{'='*92}\nДИСКРЕТНЫЙ КАНАЛ ПО ВОПРОСУ: тяга к картинке 2 в пп от 50% "
+          f"(крен снят усреднением по порядкам; тест Фишера порядок×сторона; BH внутри метрики)")
+    print(f"{'метрика':24s} {'ячеек':>6} {'знач.':>6} {'медиана|b|':>11} {'медиана|крен|':>14} {'медиана n':>10}")
+    for k in DISCRETE:
+        sub = [r for r in disc_rows if r["metric"] == "choice_" + k]
+        if not sub:
+            continue
+        print(f"{'choice_' + k:24s} {len(sub):>6} {sum(1 for r in sub if r.get('q', 1) < 0.05):>6} "
+              f"{np.median([abs(r['bias_pp']) for r in sub]):>11.1f} "
+              f"{np.median([abs(r['lean_pp']) for r in sub]):>14.1f} "
+              f"{np.median([r['n_ns'] + r['n_sw'] for r in sub]):>10.0f}")
+    dsig = sorted([r for r in disc_rows if r.get("q", 1) < 0.05], key=lambda r: -abs(r["bias_pp"]))
+    if dsig:
+        print(f"{'тема':20s} {'демогр':11s} {'метрика':20s} {'пол':4s} {'b,пп':>7} {'крен,пп':>8} "
+              f"{'n_ns':>5} {'n_sw':>5} {'AR%':>5} {'q':>7}")
+        for r in dsig[:30]:
+            print(f"{str(r['topic'])[:20]:20s} {str(r['demo'])[:11]:11s} {r['metric']:20s} {r['pol']:4s} "
+                  f"{r['bias_pp']:>+7.1f} {r['lean_pp']:>+8.1f} {r['n_ns']:>5} {r['n_sw']:>5} "
+                  f"{(r['ar_ns_pct'] + r['ar_sw_pct']) / 2:>5.0f} {r['q']:>7.4f}")
+        if len(dsig) > 30:
+            print(f"... ещё {len(dsig)-30}")
+
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=["topic", "demo", "metric", "d", "dz",
@@ -301,6 +422,15 @@ def main():
             for r in rows:
                 w.writerow({k: r.get(k) for k in w.fieldnames})
         print(f"\nтаблица: {args.csv} ({len(rows)} строк)")
+        dcsv = re.sub(r"\.csv$", "", args.csv) + "_discrete.csv"
+        with open(dcsv, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["topic", "demo", "metric", "pol", "bias_pp", "lean_pp",
+                                              "p_img2_pct", "n_ns", "n_sw", "ar_ns_pct", "ar_sw_pct",
+                                              "p", "q"])
+            w.writeheader()
+            for r in disc_rows:
+                w.writerow({k: r.get(k) for k in w.fieldnames})
+        print(f"дискретный канал по вопросу: {dcsv} ({len(disc_rows)} строк)")
 
 
 if __name__ == "__main__":

@@ -248,6 +248,8 @@ class XiaomiRoboticsPolicy:
         return self.step(obs['image'], obs['task_description'], obs['proprio'])
     
     def compute_plan(self, images, task_descriptions, proprio):
+        if os.environ.get("XIAOMI_BATCH", "0") == "1":
+            return self.compute_plan_batched(images, task_descriptions, proprio)
         # TODO This would be much faster batched
         for (image, instruction, pr, i) in zip(images, task_descriptions, proprio, range(len(images))):
             base_obs = Image.fromarray(image.cpu().numpy(), mode="RGB")
@@ -268,6 +270,27 @@ class XiaomiRoboticsPolicy:
             action_chunk = action_chunk[: self.replan_steps, :7].cpu().numpy()
             self.action_plans[i] = deque()
             self.action_plans[i].extend(action_chunk)
+
+    def compute_plan_batched(self, images, task_descriptions, proprio):
+        """12.09.2026: весь буфер одним запросом к scripts/xiaomi_server_batch.py ({"batch": [...]}).
+        Препроцессинг на клиенте тот же, что и по одному (client_process); сервер бьёт паддингом."""
+        samples = []
+        for image, instruction, pr in zip(images, task_descriptions, proprio):
+            base_obs = Image.fromarray(image.cpu().numpy(), mode="RGB")
+            if "fractal" in self.task_id:
+                state = preprocess_proprio_fractal(pr["agent"]["eef_pos"].cpu().numpy())
+            else:
+                state = preprocess_proprio_bridge(pr["agent"]["eef_pos"].cpu().numpy())
+            instruction = instruction[0].upper() + instruction[1:] + "."
+            mi = client_process(self.task_id, state, base_obs, instruction)
+            mi["seed"] = hash_data_to_seed(mi)
+            samples.append(mi)
+        chunks = self.client(batch=samples)          # список (T, D)
+        assert len(chunks) == len(samples), f"{len(chunks)} != {len(samples)}"
+        for i, ch in enumerate(chunks):
+            assert self.replan_steps <= ch.shape[0], f"{self.replan_steps} > {ch.shape[0]}"
+            self.action_plans[i] = deque()
+            self.action_plans[i].extend(ch[: self.replan_steps, :7].cpu().numpy())
 
     def step(
         self, images, task_descriptions, proprio, *args, **kwargs

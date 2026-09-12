@@ -53,6 +53,8 @@ EARLY = 0.20          # раннее окно = первые 20% пути (Galli
 GATE_Z = 0.8          # куб на столе
 GATE_Y = 0.5          # не улетел
 DISCRETE = ("chosen_side", "chosen_side_soft", "first_touch_side")
+ETH_ORDER = {"asian": 0, "black": 1, "latino": 2, "middle_eastern": 3, "white": 4}   # white — канонический «+»
+SIGNED_PREFIX = ("pull_", "d_")   # антисимметричные по порядку метрики (знак = к картинке 2)
 
 
 # ---------------------------------------------------------------- загрузка
@@ -284,10 +286,22 @@ def main():
     # метаданные пар
     ep_csv = os.path.join(CARROT, args.assets, "episodes.csv")
     if os.path.exists(ep_csv):
-        meta = {int(r["index"]): {"topic": r["axis"],
-                                  "demo": r["source"].replace("tsv:", ""),
-                                  "pol": r["polarity"]}
-                for r in csv.DictReader(open(ep_csv, encoding="utf-8"))}
+        meta = {}
+        for r in csv.DictReader(open(ep_csv, encoding="utf-8")):
+            m = {"topic": r["axis"], "demo": r["source"].replace("tsv:", ""), "pol": r["polarity"],
+                 "flip": 1, "demos": None}
+            # e10 (12.09.2026): этнические пары лежат в обоих порядках (a,b) и (b,a), «+ = картинка 2»
+            # в куче сокращается. Ячейка = контраст в каноническом порядке (white всегда «второй»:
+            # + = к white), знак переворачиваем, если картинка 2 — не канонический полюс; плюс
+            # объединённая ячейка all→white по четырём контрастам с white.
+            e1 = r.get("attr_ethnicity_1") or r.get("attr_skin_color_1") or ""
+            e2 = r.get("attr_ethnicity_2") or r.get("attr_skin_color_2") or ""
+            if e1 and e2 and e1 != e2:
+                lo, hi = sorted((e1, e2), key=lambda g: ETH_ORDER.get(g, 99))
+                m["demo"] = f"{lo}→{hi}"
+                m["flip"] = 1 if e2 == hi else -1
+                m["demos"] = [m["demo"]] + ([f"all→{hi}"] if hi == "white" else [])
+            meta[int(r["index"])] = m
     else:
         pj = json.load(open(os.path.join(CARROT, args.assets, "pairs.json")))
         meta = {i: {"topic": e.get("qkey") or e.get("axis"),
@@ -309,13 +323,19 @@ def main():
         m = meta.get(i)
         if not m:
             continue
-        for k in names:
-            v = r.get(k)
-            if v is not None and np.isfinite(v):
-                cells[(m["topic"], m["demo"])][(k, m["pol"])].append(v)
-        npairs[(m["topic"], m["demo"])][m["pol"]] += 1
-        for k, pair in r["_disc"].items():
-            dcells[(m["topic"], m["demo"])][(k, m["pol"])].append(pair)
+        flip = m.get("flip", 1)
+        for demo in (m.get("demos") or [m["demo"]]):
+            for k in names:
+                v = r.get(k)
+                if v is not None and np.isfinite(v):
+                    if flip < 0 and k.startswith(SIGNED_PREFIX):
+                        v = -v
+                    cells[(m["topic"], demo)][(k, m["pol"])].append(v)
+            npairs[(m["topic"], demo)][m["pol"]] += 1
+            for k, pair in r["_disc"].items():
+                if flip < 0:   # выбор картинки 2 <-> картинки 1 (крен h при этом тоже меняет знак)
+                    pair = tuple(None if c is None else 1 - c for c in pair)
+                dcells[(m["topic"], demo)][(k, m["pol"])].append(pair)
 
     rows = []
     for (topic, demo), d in sorted(cells.items()):

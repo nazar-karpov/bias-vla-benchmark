@@ -1,0 +1,68 @@
+diff --git a/gr00t/model/gr00t_n1d7/processing_gr00t_n1d7.py b/gr00t/model/gr00t_n1d7/processing_gr00t_n1d7.py
+index ec0d59f..0630b13 100644
+--- a/gr00t/model/gr00t_n1d7/processing_gr00t_n1d7.py
++++ b/gr00t/model/gr00t_n1d7/processing_gr00t_n1d7.py
+@@ -126,6 +126,10 @@ def build_processor(model_name: str, transformers_loading_kwargs: dict) -> Qwen3
+             "Qwen3VLProcessor is not available. "
+             "Please upgrade transformers: pip install transformers>=4.52.0"
+         )
++    import os
++    _p = os.environ.get("GR00T_COSMOS_PATH")  # 12.09.2026: гейт HF без токена -> локальный снапшот
++    if _p and os.path.isdir(_p) and "Cosmos-Reason2" in str(model_name):
++        model_name = _p
+     return Qwen3VLProcessor.from_pretrained(model_name, **transformers_loading_kwargs)
+ 
+ 
+diff --git a/gr00t/model/modules/qwen3_backbone.py b/gr00t/model/modules/qwen3_backbone.py
+index b7665be..3b54c04 100644
+--- a/gr00t/model/modules/qwen3_backbone.py
++++ b/gr00t/model/modules/qwen3_backbone.py
+@@ -132,6 +132,14 @@ def _assign_inv_freq(
+     return True
+ 
+ 
++
++def _resolve_backbone(model_name):
++    """12.09.2026: Cosmos-Reason2-2B гейтится на HF; без токена берём локальный снапшот из GR00T_COSMOS_PATH."""
++    import os
++    p = os.environ.get("GR00T_COSMOS_PATH")
++    return p if (p and os.path.isdir(p) and "Cosmos-Reason2" in str(model_name)) else model_name
++
++
+ class Qwen3Backbone(torch.nn.Module):
+     def __init__(
+         self,
+@@ -181,7 +189,7 @@ class Qwen3Backbone(torch.nn.Module):
+ 
+         try:
+             self.model = Qwen3VLForConditionalGeneration.from_pretrained(
+-                model_name,
++                _resolve_backbone(model_name),
+                 **extra_kwargs,
+                 **transformers_loading_kwargs,
+             ).eval()
+diff --git a/pyproject.toml b/pyproject.toml
+index 9beb9e5..b729840 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -81,7 +81,9 @@ include = ["gr00t*"]
+ [tool.uv]
+ required-environments = [
+     "sys_platform == 'linux' and platform_machine == 'x86_64'",
+-    "sys_platform == 'linux' and platform_machine == 'aarch64'",
++]
++environments = [
++    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+ ]
+ 
+ [tool.uv.sources]
+@@ -98,9 +100,6 @@ flash-attn = [
+     { url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+     { url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_aarch64.whl", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+ ]
+-torchcodec = [
+-    { path = "scripts/deployment/dgpu/wheels/torchcodec-0.8.0-cp312-cp312-linux_aarch64.whl", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+-]
+ tensorrt-cu12-libs = [
+     { index = "nvidia-pypi", marker = "platform_machine == 'x86_64'" },
+ ]

@@ -81,7 +81,7 @@ fi
 
 cd $REPO_ROOT/SimplerEnv
 python -u -m simpler_env.eval --vla "$VLA" --assets "$ASSETS" \
-  --start-id "$START" --count "$REMAIN" --shard-size "$SHARD" --buffer-inferbatch "$SHARD" \
+  --start-id "$START" --count "$REMAIN" --shard-size "$SHARD" --buffer-inferbatch "${INFERBATCH:-$SHARD}" \
   "${NM[@]}" "${extra[@]}" $VLA_ARGS < /dev/null >> "$LOG" 2>&1
 rc=$?
 echo "DONE_G10 $(date -u) rc=$rc vla=$VLA assets=$ASSETS order=$ORDER [$START0,$END)" | tee -a "$LOG"

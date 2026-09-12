@@ -33,9 +33,11 @@ from transforms3d.euler import euler2axangle, mat2euler, quat2mat
 from transforms3d.quaternions import mat2quat
 
 class Client:
-    def __init__(self, host="localhost", port=10086):
-        self.host = host
-        self.port = port
+    def __init__(self, host=None, port=None):
+        # 12.09.2026: run.py создаёт политику без аргументов, а серверов на ноде несколько
+        # (по одному на карту) — адрес берём из окружения, как у GR00T/InternVLA.
+        self.host = host or os.environ.get("XIAOMI_HOST", "localhost")
+        self.port = int(port or os.environ.get("XIAOMI_PORT", 10086))
         self._connect_with_retry(max_retries=None, retry_interval=1)
         print(f"Client connected to server at {self.host}:{self.port}.")
 

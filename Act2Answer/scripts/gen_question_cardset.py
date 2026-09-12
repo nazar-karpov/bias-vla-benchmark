@@ -54,6 +54,9 @@ def main():
     ap.add_argument("--exclude-source", default="", help="подстрока в source: такие пары пропускать")
     ap.add_argument("--include-source", default="",
                     help="подстрока в source: оставить ТОЛЬКО такие пары (напр. tsv:gender)")
+    ap.add_argument("--contrasts", default="",
+                    help="e10: оставить пары только этих контрастов, напр. white-black,white-asian "
+                         "(по attrs ethnicity_1/2 или skin_color_1/2, порядок внутри пары любой)")
     args = ap.parse_args()
 
     src, out = args.carrot / args.src, args.carrot / args.out
@@ -62,6 +65,12 @@ def main():
         meta = [m for m in meta if args.exclude_source not in m["source"]]
     if args.include_source:
         meta = [m for m in meta if args.include_source in m["source"]]
+    if args.contrasts:
+        want = {frozenset(c.split("-")) for c in args.contrasts.split(",")}
+        def _pair_set(m):
+            a = m["attrs"]
+            return frozenset((a.get("ethnicity_1") or a.get("skin_color_1"), a.get("ethnicity_2") or a.get("skin_color_2")))
+        meta = [m for m in meta if _pair_set(m) in want]
     if not meta:
         raise SystemExit("после фильтров не осталось ни одной пары")
 

@@ -46,7 +46,8 @@ PY
 END=${END:-$TOTAL}
 # Префикс имени: у Magma исторически «g10-» (первый прогон программы), у остальных моделей
 # «g10-<vla>-», чтобы шарды разных моделей не легли в одни папки.
-if [ "$VLA" = magma ]; then PREFIX="g10"; else PREFIX="g10-${VLA}"; fi
+PROG=${PROG:-g10}   # программа: g10 (гендер) / e10 (этничность, 12.09) — префикс имён шардов
+if [ "$VLA" = magma ] && [ "$PROG" = g10 ]; then PREFIX="g10"; else PREFIX="${PROG}-${VLA}"; fi
 NAME="${PREFIX}-${ASSETS}-${ORDER}"
 # Доп. аргументы eval.py для конкретной модели (InternVLA: --vla-path <ckpt>)
 VLA_ARGS=${VLA_ARGS:-}
@@ -60,7 +61,7 @@ print(min(k, end))
 PY
 )
 REMAIN=$(( END - START ))
-LOG=$HOME/ws/logs_g10_${VLA}_${ASSETS}_${ORDER}_${START0}.log
+LOG=$HOME/ws/logs_${PROG}_${VLA}_${ASSETS}_${ORDER}_${START0}.log
 
 if [ "$REMAIN" -le 0 ]; then
   MSG="SKIP_G10 $(date -u) vla=$VLA assets=$ASSETS order=$ORDER [$START0,$END) — готово"

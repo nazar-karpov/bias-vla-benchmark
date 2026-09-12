@@ -16,6 +16,7 @@
 #   DRY=1 — показать, откуда продолжит (серверы не поднимаются)
 #   STOP=1 — убить серверы этой модели на ноде (сервер Xiaomi — mp.Process-ребёнок, убиваем по порту)
 set -u
+PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
 VLA=${VLA:?VLA=gr00t|xiaomi}
 NODE=${NODE:-}
 DRY=${DRY:-0}
@@ -87,7 +88,7 @@ chain() {  # gpu k  "ASSETS:ORDER:START0:END" ...
   done
   if [ "$DRY" = 1 ]; then bash -c "$cmds"; return; fi
   start_server $gpu $k || return 1
-  setsid -f nohup bash -c "$cmds" < /dev/null > "$LOGS/chain_g10_${VLA}_${NODE}_gpu${gpu}_$k.out" 2>&1
+  setsid -f nohup bash -c "$cmds" < /dev/null > "$LOGS/chain_${PROG}_${VLA}_${NODE}_gpu${gpu}_$k.out" 2>&1
   echo "GPU$gpu/$k :$p → $*"
 }
 
@@ -105,29 +106,31 @@ case "$NODE" in
     export ${PORT_VAR}=$(port_of 0 0) ${HOST_VAR}=127.0.0.1 CUDA_VISIBLE_DEVICES=0 MKL_NUM_THREADS=$OMP_NUM_THREADS
     export BOARD_XY_SCALE=1.2 A2A_TILE_Y=0.14 A2A_TRAJ_LOG=1 A2A_SAVE_VIDEO=0
     rm -rf $A/outputs/smoke-$VLA-noswap
-    python -u -m simpler_env.eval --vla $VLA --assets pairs_g10 \
+    python -u -m simpler_env.eval --vla $VLA --assets pairs_$CS \
       --start-id 0 --count 4 --shard-size 4 --buffer-inferbatch 4 --name smoke-$VLA-noswap \
       < /dev/null > $LOGS/_smoke_$VLA.log 2>&1
     echo "SMOKE rc=$?"; ls $A/outputs/smoke-$VLA-noswap/glob/vis_0_test/ 2>&1
     ;;
   # ---- K=1: один поток на карту (GR00T) ----
   A)
-    chain 0 0 focus_g10:noswap:0:2496    pairs_g10:noswap:0:480
-    chain 1 0 focus_g10:noswap:2496:5000 pairs_g10:noswap:480:1000
-    chain 2 0 focus_g10:swap:0:2496      pairs_g10:swap:0:480
-    chain 3 0 focus_g10:swap:2496:5000   pairs_g10:swap:480:1000
+    chain 0 0 focus_$CS:noswap:0:2496    pairs_$CS:noswap:0:480
+    chain 1 0 focus_$CS:noswap:2496:5000 pairs_$CS:noswap:480:1000
+    chain 2 0 focus_$CS:swap:0:2496      pairs_$CS:swap:0:480
+    chain 3 0 focus_$CS:swap:2496:5000   pairs_$CS:swap:480:1000
     ;;
-  C2) chain 0 0 visbias_g10:noswap:0:2496; chain 1 0 visbias_g10:noswap:2496:5000 ;;
-  C3) chain 0 0 visbias_g10:swap:0:2496 ;;
-  C4) chain 0 0 visbias_g10:swap:2496:5000 ;;
+  C2) chain 0 0 visbias_$CS:noswap:0:2496; chain 1 0 visbias_$CS:noswap:2496:5000 ;;
+  C3) chain 0 0 visbias_$CS:swap:0:2496 ;;
+  C4) chain 0 0 visbias_$CS:swap:2496:5000 ;;
   # ---- K=3: три потока на карту (Xiaomi); PAIRS уходит на Bohr (XB) ----
-  XA)  split3_lo 0 focus_g10 noswap; split3_hi 1 focus_g10 noswap; split3_lo 2 focus_g10 swap; split3_hi 3 focus_g10 swap ;;
-  XA2) split2_lo 0 focus_g10 noswap; split2_hi 1 focus_g10 noswap; split2_lo 2 focus_g10 swap; split2_hi 3 focus_g10 swap ;;
-  XC2) split3_lo 0 visbias_g10 noswap; split3_hi 1 visbias_g10 noswap ;;
-  XC3) split3_lo 0 visbias_g10 swap ;;
-  XC4) split3_hi 0 visbias_g10 swap ;;
-  XB)  chain 0 0 pairs_g10:noswap:0:480; chain 0 1 pairs_g10:noswap:480:1000
-       chain 1 0 pairs_g10:swap:0:480;   chain 1 1 pairs_g10:swap:480:1000 ;;
-  *) echo "NODE=A|C2|C3|C4|XA|XA2|XC2|XC3|XC4|XB|SMOKE"; exit 1;;
+  XA)  split3_lo 0 focus_$CS noswap; split3_hi 1 focus_$CS noswap; split3_lo 2 focus_$CS swap; split3_hi 3 focus_$CS swap ;;
+  XA2) split2_lo 0 focus_$CS noswap; split2_hi 1 focus_$CS noswap; split2_lo 2 focus_$CS swap; split2_hi 3 focus_$CS swap ;;
+  XC2) split3_lo 0 visbias_$CS noswap; split3_hi 1 visbias_$CS noswap ;;
+  XC3) split3_lo 0 visbias_$CS swap ;;
+  XC4) split3_hi 0 visbias_$CS swap ;;
+  XBALL) chain 0 0 focus_$CS:noswap:0:5000 pairs_$CS:noswap:0:1000; chain 0 1 focus_$CS:swap:0:5000 pairs_$CS:swap:0:1000
+         chain 1 0 visbias_$CS:noswap:0:5000; chain 1 1 visbias_$CS:swap:0:5000 ;;   # Bohr целиком (батчевый Xiaomi)
+  XB)  chain 0 0 pairs_$CS:noswap:0:480; chain 0 1 pairs_$CS:noswap:480:1000
+       chain 1 0 pairs_$CS:swap:0:480;   chain 1 1 pairs_$CS:swap:480:1000 ;;
+  *) echo "NODE=A|C2|C3|C4|XA|XA2|XC2|XC3|XC4|XB|XBALL|SMOKE"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "клиентов simpler_env.eval: $(pgrep -f 'python -u -m simpler_env.eval' | wc -l), серверов (портов): $(for g in 0 1 2 3; do for k in 0 1 2; do port_alive $(port_of $g $k) && echo x; done; done | wc -l)"; }

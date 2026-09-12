@@ -7,7 +7,9 @@
 #
 #   NODE=A VLA=magma ./launch_g10_node.sh          # DRY=1 — только показать, откуда продолжит
 set -u
-PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
+PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG
+# границы диапазонов: g10 — 5000 эп. на кардсет/порядок (половина 2496=52×48); e10 — 10000 (половина 4992=104×48)
+if [ "$PROG" = e10 ]; then HALF=${HALF:-4992}; TOT=${TOT:-10000}; else HALF=${HALF:-2496}; TOT=${TOT:-5000}; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
 NODE=${NODE:?NODE=A|B}
 VLA=${VLA:-magma}
 DRY=${DRY:-0}
@@ -31,28 +33,28 @@ chain() {  # gpu  "ASSETS:ORDER:START0:END" ...
 
 case "$NODE" in
   A)
-    chain 0 focus_$CS:noswap:0:2496    pairs_$CS:noswap:0:480
-    chain 1 focus_$CS:noswap:2496:5000 pairs_$CS:noswap:480:1000
-    chain 2 focus_$CS:swap:0:2496      pairs_$CS:swap:0:480
-    chain 3 focus_$CS:swap:2496:5000   pairs_$CS:swap:480:1000
+    chain 0 focus_$CS:noswap:0:$HALF    pairs_$CS:noswap:0:480
+    chain 1 focus_$CS:noswap:$HALF:$TOT pairs_$CS:noswap:480:1000
+    chain 2 focus_$CS:swap:0:$HALF      pairs_$CS:swap:0:480
+    chain 3 focus_$CS:swap:$HALF:$TOT   pairs_$CS:swap:480:1000
     ;;
   B)
     # h100q2 (11.09.2026): на картах 1 и 3 заклинил Vulkan-рендер (даже 64×64 виснет),
     # CUDA-счёт на них жив. Поэтому пары карт: процессу видны две, run.py кладёт
     # симулятор+рендер на первую видимую (здоровую 0/2), модель — на вторую (1/3).
     # По два процесса на пару: [0,2496) и [2496,5000) на каждый порядок.
-    chain 0,1 visbias_$CS:noswap:0:2496
-    chain 0,1 visbias_$CS:noswap:2496:5000
-    chain 2,3 visbias_$CS:swap:0:2496
-    chain 2,3 visbias_$CS:swap:2496:5000
+    chain 0,1 visbias_$CS:noswap:0:$HALF
+    chain 0,1 visbias_$CS:noswap:$HALF:$TOT
+    chain 2,3 visbias_$CS:swap:0:$HALF
+    chain 2,3 visbias_$CS:swap:$HALF:$TOT
     ;;
   # после пересоздания второй ноды (11.09): h100q2 = 2 карты, h100q3/h100q4 по одной
   C2)
-    chain 0 visbias_$CS:noswap:0:2496
-    chain 1 visbias_$CS:noswap:2496:5000
+    chain 0 visbias_$CS:noswap:0:$HALF
+    chain 1 visbias_$CS:noswap:$HALF:$TOT
     ;;
-  C3) chain 0 visbias_$CS:swap:0:2496 ;;
-  C4) chain 0 visbias_$CS:swap:2496:5000 ;;
+  C3) chain 0 visbias_$CS:swap:0:$HALF ;;
+  C4) chain 0 visbias_$CS:swap:$HALF:$TOT ;;
   *) echo "NODE=A|B|C2|C3|C4"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "запущено процессов simpler_env.eval: $(pgrep -cf simpler_env.eval)"; }

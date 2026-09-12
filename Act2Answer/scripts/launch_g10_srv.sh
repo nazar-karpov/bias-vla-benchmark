@@ -16,7 +16,9 @@
 #   DRY=1 — показать, откуда продолжит (серверы не поднимаются)
 #   STOP=1 — убить серверы этой модели на ноде (сервер Xiaomi — mp.Process-ребёнок, убиваем по порту)
 set -u
-PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
+PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG
+# границы диапазонов: g10 — 5000 эп. на кардсет/порядок (половина 2496=52×48); e10 — 10000 (половина 4992=104×48)
+if [ "$PROG" = e10 ]; then HALF=${HALF:-4992}; TOT=${TOT:-10000}; else HALF=${HALF:-2496}; TOT=${TOT:-5000}; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
 VLA=${VLA:?VLA=gr00t|xiaomi}
 NODE=${NODE:-}
 DRY=${DRY:-0}
@@ -113,22 +115,22 @@ case "$NODE" in
     ;;
   # ---- K=1: один поток на карту (GR00T) ----
   A)
-    chain 0 0 focus_$CS:noswap:0:2496    pairs_$CS:noswap:0:480
-    chain 1 0 focus_$CS:noswap:2496:5000 pairs_$CS:noswap:480:1000
-    chain 2 0 focus_$CS:swap:0:2496      pairs_$CS:swap:0:480
-    chain 3 0 focus_$CS:swap:2496:5000   pairs_$CS:swap:480:1000
+    chain 0 0 focus_$CS:noswap:0:$HALF    pairs_$CS:noswap:0:480
+    chain 1 0 focus_$CS:noswap:$HALF:$TOT pairs_$CS:noswap:480:1000
+    chain 2 0 focus_$CS:swap:0:$HALF      pairs_$CS:swap:0:480
+    chain 3 0 focus_$CS:swap:$HALF:$TOT   pairs_$CS:swap:480:1000
     ;;
-  C2) chain 0 0 visbias_$CS:noswap:0:2496; chain 1 0 visbias_$CS:noswap:2496:5000 ;;
-  C3) chain 0 0 visbias_$CS:swap:0:2496 ;;
-  C4) chain 0 0 visbias_$CS:swap:2496:5000 ;;
+  C2) chain 0 0 visbias_$CS:noswap:0:$HALF; chain 1 0 visbias_$CS:noswap:$HALF:$TOT ;;
+  C3) chain 0 0 visbias_$CS:swap:0:$HALF ;;
+  C4) chain 0 0 visbias_$CS:swap:$HALF:$TOT ;;
   # ---- K=3: три потока на карту (Xiaomi); PAIRS уходит на Bohr (XB) ----
   XA)  split3_lo 0 focus_$CS noswap; split3_hi 1 focus_$CS noswap; split3_lo 2 focus_$CS swap; split3_hi 3 focus_$CS swap ;;
   XA2) split2_lo 0 focus_$CS noswap; split2_hi 1 focus_$CS noswap; split2_lo 2 focus_$CS swap; split2_hi 3 focus_$CS swap ;;
   XC2) split3_lo 0 visbias_$CS noswap; split3_hi 1 visbias_$CS noswap ;;
   XC3) split3_lo 0 visbias_$CS swap ;;
   XC4) split3_hi 0 visbias_$CS swap ;;
-  XBALL) chain 0 0 focus_$CS:noswap:0:5000 pairs_$CS:noswap:0:1000; chain 0 1 focus_$CS:swap:0:5000 pairs_$CS:swap:0:1000
-         chain 1 0 visbias_$CS:noswap:0:5000; chain 1 1 visbias_$CS:swap:0:5000 ;;   # Bohr целиком (батчевый Xiaomi)
+  XBALL) chain 0 0 focus_$CS:noswap:0:$TOT pairs_$CS:noswap:0:1000; chain 0 1 focus_$CS:swap:0:$TOT pairs_$CS:swap:0:1000
+         chain 1 0 visbias_$CS:noswap:0:$TOT; chain 1 1 visbias_$CS:swap:0:$TOT ;;   # Bohr целиком (батчевый Xiaomi)
   XB)  chain 0 0 pairs_$CS:noswap:0:480; chain 0 1 pairs_$CS:noswap:480:1000
        chain 1 0 pairs_$CS:swap:0:480;   chain 1 1 pairs_$CS:swap:480:1000 ;;
   *) echo "NODE=A|C2|C3|C4|XA|XA2|XC2|XC3|XC4|XB|XBALL|SMOKE"; exit 1;;

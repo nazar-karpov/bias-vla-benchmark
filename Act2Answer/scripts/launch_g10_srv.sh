@@ -40,7 +40,10 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS:-$(( K > 1 ? 4 : 10 ))}
 
 port_of() { echo $((BASE_PORT + $1 * 10 + $2)); }   # gpu k
 port_alive() { (exec 3<>/dev/tcp/127.0.0.1/$1) 2>/dev/null && exec 3>&- && return 0; return 1; }
-kill_port() { for p in $(ss -ltnp 2>/dev/null | grep ":$1 " | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do kill -9 $p 2>/dev/null; done; }
+kill_port() {  # порт → pid слушателя (ss); на облаке ss без pid, тогда по "--port P" в argv родителя и его mp-детям
+  local pids=$(ss -ltnp 2>/dev/null | grep ":$1 " | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u)
+  for par in $(pgrep -f -- "--port $1( |$)"); do pids="$pids $(pgrep -P $par) $par"; done
+  for p in $pids; do kill -9 $p 2>/dev/null; done; }
 
 if [ "${STOP:-0}" = 1 ]; then
   pkill -f "run_gr00t_server.py|deploy/server.py" 2>/dev/null
@@ -89,6 +92,9 @@ chain() {  # gpu k  "ASSETS:ORDER:START0:END" ...
 # split3 GPU ASSETS ORDER  — диапазон [0,2496) или [2496,5000) тремя потоками (границы кратны 48)
 split3_lo() { chain $1 0 $2:$3:0:816;    chain $1 1 $2:$3:816:1680;  chain $1 2 $2:$3:1680:2496; }
 split3_hi() { chain $1 0 $2:$3:2496:3312; chain $1 1 $2:$3:3312:4176; chain $1 2 $2:$3:4176:5000; }
+# split2 — двумя потоками (K=2: h100q с 48 ядрами не тянет 12 цепочек — троттлинг, ssh не отвечает)
+split2_lo() { chain $1 0 $2:$3:0:1248;    chain $1 1 $2:$3:1248:2496; }
+split2_hi() { chain $1 0 $2:$3:2496:3744; chain $1 1 $2:$3:3744:5000; }
 
 case "$NODE" in
   SMOKE)
@@ -114,11 +120,12 @@ case "$NODE" in
   C4) chain 0 0 visbias_g10:swap:2496:5000 ;;
   # ---- K=3: три потока на карту (Xiaomi); PAIRS уходит на Bohr (XB) ----
   XA)  split3_lo 0 focus_g10 noswap; split3_hi 1 focus_g10 noswap; split3_lo 2 focus_g10 swap; split3_hi 3 focus_g10 swap ;;
+  XA2) split2_lo 0 focus_g10 noswap; split2_hi 1 focus_g10 noswap; split2_lo 2 focus_g10 swap; split2_hi 3 focus_g10 swap ;;
   XC2) split3_lo 0 visbias_g10 noswap; split3_hi 1 visbias_g10 noswap ;;
   XC3) split3_lo 0 visbias_g10 swap ;;
   XC4) split3_hi 0 visbias_g10 swap ;;
   XB)  chain 0 0 pairs_g10:noswap:0:480; chain 0 1 pairs_g10:noswap:480:1000
        chain 1 0 pairs_g10:swap:0:480;   chain 1 1 pairs_g10:swap:480:1000 ;;
-  *) echo "NODE=A|C2|C3|C4|XA|XC2|XC3|XC4|XB|SMOKE"; exit 1;;
+  *) echo "NODE=A|C2|C3|C4|XA|XA2|XC2|XC3|XC4|XB|SMOKE"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "клиентов simpler_env.eval: $(pgrep -f 'python -u -m simpler_env.eval' | wc -l), серверов (портов): $(for g in 0 1 2 3; do for k in 0 1 2; do port_alive $(port_of $g $k) && echo x; done; done | wc -l)"; }

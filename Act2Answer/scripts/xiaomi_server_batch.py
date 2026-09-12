@@ -24,6 +24,27 @@ from transformers import AutoModel, AutoProcessor
 _BRIDGE_ONLY = ("bridge", "fractal")
 
 
+def patch_embed_linear(model):
+    """Патч-эмбеддинг Qwen3-VL — Conv3d с kernel==stride по ОДНОМУ патчу на строку, т.е. ровно Linear.
+    В torch 2.9 этот conv уходит в aten::slow_conv_dilated3d (CPU-фоллбек): 73 % времени forward'а
+    и линейный рост с батчем (B=16 → 19.5 с). Linear математически тот же оператор (проверка 12.09:
+    bf16-conv и bf16-linear отклоняются от fp32-референса одинаково, ~1e-2 отн.), но B=48 → 42 мс/образец."""
+    import torch.nn as nn
+    import torch.nn.functional as F
+    n = 0
+    for name, mod in model.named_modules():
+        proj = getattr(mod, "proj", None)
+        if isinstance(proj, nn.Conv3d) and tuple(proj.stride) == tuple(proj.kernel_size) and all(d == 1 for d in proj.dilation):
+            W = proj.weight.detach().reshape(proj.out_channels, -1)
+            b = proj.bias
+            in_feat = W.shape[1]
+            def fwd(hidden_states, W=W, b=b, in_feat=in_feat):
+                return F.linear(hidden_states.reshape(-1, in_feat).to(W.dtype), W, b)
+            mod.forward = fwd
+            n += 1
+    return n
+
+
 class Server(mp.Process):
     def __init__(self, model_path, host, port):
         super().__init__()
@@ -35,6 +56,8 @@ class Server(mp.Process):
             attn_implementation=os.environ.get("XR0_ATTN", "flash_attention_2"),
             dtype=torch.bfloat16).cuda().to(torch.bfloat16)
         self.processor = AutoProcessor.from_pretrained(self.model_path, trust_remote_code=True, use_fast=False)
+        if os.environ.get("XR0_PATCH_EMBED", "1") == "1":
+            print("patch_embed conv3d -> linear:", patch_embed_linear(self.model), "modules", flush=True)
 
     @staticmethod
     def _recv_all(conn, n):

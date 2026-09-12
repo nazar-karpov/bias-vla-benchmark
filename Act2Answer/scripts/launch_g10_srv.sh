@@ -36,6 +36,8 @@ esac
 export VLA
 # клиентские переменные (проходят в run_g10_magma.sh через окружение)
 export XIAOMI_TASK_ID=bridge_delta INFERBATCH=${INFERBATCH:-48}
+export XIAOMI_BATCH=${XIAOMI_BATCH:-1}   # клиент шлёт весь буфер одним запросом (нужен xiaomi_server_batch.py)
+XIAOMI_SERVER=${XIAOMI_SERVER:-$A/scripts/xiaomi_server_batch.py}   # deploy/server.py — оригинал, по одному
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-$(( K > 1 ? 4 : 10 ))}
 
 port_of() { echo $((BASE_PORT + $1 * 10 + $2)); }   # gpu k
@@ -68,7 +70,7 @@ start_server() {  # gpu k
         --embodiment-tag simpler_env_widowx --port "$p" --host 0.0.0.0 --use-sim-policy-wrapper
     else
       cd $R/Xiaomi-Robotics-0
-      exec setsid nohup $VENV deploy/server.py --model "$SNAP" --host localhost --port "$p"
+      exec setsid nohup $VENV $XIAOMI_SERVER --model "$SNAP" --host localhost --port "$p"
     fi ) < /dev/null > "$log" 2>&1 &
   for i in $(seq 1 90); do sleep 10; port_alive $p && { echo "сервер $VLA :$p (GPU$g/$k) поднялся за ~$((i*10)) с"; sleep 5; return 0; }
     grep -q "Traceback" "$log" 2>/dev/null && { echo "СЕРВЕР $VLA :$p (GPU$g/$k) УПАЛ — см. $log"; return 1; }; done

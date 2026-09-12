@@ -11,7 +11,7 @@ PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG
 # границы диапазонов: g10 — 5000 эп. на кардсет/порядок (половина 2496=52×48); e10 — 10000 (половина 4992=104×48)
 if [ "$PROG" = e10 ]; then HALF=${HALF:-4992}; TOT=${TOT:-10000}; elif [ "$PROG" = e10b ]; then HALF=${HALF:-7488}; TOT=${TOT:-15000}; else HALF=${HALF:-2496}; TOT=${TOT:-5000}; fi
 # e10b (остальные 6 контрастов): PAIRS-кардсета нет (в PAIRS только black-white) — цепочки PAIRS пустые
-if [ "$PROG" = e10b ]; then P_NS0=""; P_NS1=""; P_SW0=""; P_SW1=""; else P_NS0="$P_NS0"; P_NS1="$P_NS1"; P_SW0="$P_SW0"; P_SW1="$P_SW1"; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
+if [ "$PROG" = e10b ]; then P_NS0=""; P_NS1=""; P_SW0=""; P_SW1=""; else P_NS0="pairs_$CS:noswap:0:480"; P_NS1="pairs_$CS:noswap:480:1000"; P_SW0="pairs_$CS:swap:0:480"; P_SW1="pairs_$CS:swap:480:1000"; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
 NODE=${NODE:?NODE=A|B}
 VLA=${VLA:-magma}
 DRY=${DRY:-0}

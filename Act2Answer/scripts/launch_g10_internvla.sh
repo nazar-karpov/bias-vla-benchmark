@@ -11,7 +11,9 @@
 set -u
 PROG=${PROG:-g10}; CS=${CS:-$PROG}; export PROG
 # границы диапазонов: g10 — 5000 эп. на кардсет/порядок (половина 2496=52×48); e10 — 10000 (половина 4992=104×48)
-if [ "$PROG" = e10 ]; then HALF=${HALF:-4992}; TOT=${TOT:-10000}; else HALF=${HALF:-2496}; TOT=${TOT:-5000}; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
+if [ "$PROG" = e10 ]; then HALF=${HALF:-4992}; TOT=${TOT:-10000}; elif [ "$PROG" = e10b ]; then HALF=${HALF:-7488}; TOT=${TOT:-15000}; else HALF=${HALF:-2496}; TOT=${TOT:-5000}; fi
+# e10b (остальные 6 контрастов): PAIRS-кардсета нет (в PAIRS только black-white) — цепочки PAIRS пустые
+if [ "$PROG" = e10b ]; then P_NS0=""; P_NS1=""; P_SW0=""; P_SW1=""; else P_NS0="$P_NS0"; P_NS1="$P_NS1"; P_SW0="$P_SW0"; P_SW1="$P_SW1"; fi   # e10: PROG=e10 → кардсеты focus_e10/visbias_e10/pairs_e10, шарды e10-<vla>-...
 NODE=${NODE:?NODE=A|C2|C3|C4|SMOKE}
 DRY=${DRY:-0}
 R=/workspace/moskalenko/bias-vla-benchmark-main
@@ -67,10 +69,10 @@ case "$NODE" in
     echo "SMOKE rc=$?"; ls $A/outputs/smoke-internvla-noswap/glob/vis_0_test/ 2>&1
     ;;
   A)
-    chain 0 focus_$CS:noswap:0:$HALF    pairs_$CS:noswap:0:480
-    chain 1 focus_$CS:noswap:$HALF:$TOT pairs_$CS:noswap:480:1000
-    chain 2 focus_$CS:swap:0:$HALF      pairs_$CS:swap:0:480
-    chain 3 focus_$CS:swap:$HALF:$TOT   pairs_$CS:swap:480:1000
+    chain 0 focus_$CS:noswap:0:$HALF    $P_NS0
+    chain 1 focus_$CS:noswap:$HALF:$TOT $P_NS1
+    chain 2 focus_$CS:swap:0:$HALF      $P_SW0
+    chain 3 focus_$CS:swap:$HALF:$TOT   $P_SW1
     ;;
   C2)
     chain 0 visbias_$CS:noswap:0:$HALF

@@ -281,6 +281,7 @@ def main():
     ap.add_argument("--min-n-disc", type=int, default=10,
                     help="мин. ответивших эпизодов (оба порядка вместе) на полярность в дискретном канале")
     ap.add_argument("--csv", help="куда сохранить таблицу")
+    ap.add_argument("--topic-col", default="axis", help="колонка episodes.csv для темы ячейки: axis (по умолчанию) или question_id (по вопросам)")
     args = ap.parse_args()
 
     # метаданные пар
@@ -288,7 +289,7 @@ def main():
     if os.path.exists(ep_csv):
         meta = {}
         for r in csv.DictReader(open(ep_csv, encoding="utf-8")):
-            m = {"topic": r["axis"], "demo": r["source"].replace("tsv:", ""), "pol": r["polarity"],
+            m = {"topic": r.get(args.topic_col) or r["axis"], "demo": r["source"].replace("tsv:", ""), "pol": r["polarity"],
                  "flip": 1, "demos": None}
             # e10 (12.09.2026): этнические пары лежат в обоих порядках (a,b) и (b,a), «+ = картинка 2»
             # в куче сокращается. Ячейка = контраст в каноническом порядке (white всегда «второй»:
@@ -373,7 +374,7 @@ def main():
     for (topic, demo), d in sorted(dcells.items()):
         for k in DISCRETE:
             est = {}
-            for pol in ("pos", "neg"):
+            for pol in sorted({p for (kk, p) in d if kk == k}, key=lambda p: ("pos", "neg").index(p) if p in ("pos", "neg") else 9):
                 vals = d.get((k, pol), [])
                 e = discrete_cell(vals)
                 if e is None or e["n_ns"] + e["n_sw"] < args.min_n_disc:

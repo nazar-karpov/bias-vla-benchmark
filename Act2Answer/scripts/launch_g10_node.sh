@@ -57,6 +57,8 @@ case "$NODE" in
     ;;
   C3) chain 0 visbias_$CS:swap:0:$HALF ;;
   C4) chain 0 visbias_$CS:swap:$HALF:$TOT ;;
+  CUSTOM) # хвосты/перебалансировка: CUSTOM0="assets:order:start:end [assets:order:start:end ...]" на карту 0 и т.д.
+    for g in 0 1 2 3; do v="CUSTOM$g"; [ -n "${!v:-}" ] && chain $g ${!v}; done ;;
   *) echo "NODE=A|B|C2|C3|C4"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "запущено процессов simpler_env.eval: $(pgrep -cf simpler_env.eval)"; }

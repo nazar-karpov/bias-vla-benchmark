@@ -135,6 +135,8 @@ case "$NODE" in
          chain 1 0 visbias_$CS:noswap:0:$TOT; chain 1 1 visbias_$CS:swap:0:$TOT ;;   # Bohr целиком (батчевый Xiaomi)
   XB)  chain 0 0 $P_NS0; chain 0 1 $P_NS1
        chain 1 0 $P_SW0;   chain 1 1 $P_SW1 ;;
+  CUSTOM) # хвосты/перебалансировка: CUSTOM0="assets:order:start:end [assets:order:start:end ...]" на карту 0 и т.д.
+    for g in 0 1 2 3; do v="CUSTOM$g"; [ -n "${!v:-}" ] && chain $g 0 ${!v}; done ;;
   *) echo "NODE=A|C2|C3|C4|XA|XA2|XC2|XC3|XC4|XB|XBALL|SMOKE"; exit 1;;
 esac
 [ "$DRY" = 1 ] || { sleep 3; echo "клиентов simpler_env.eval: $(pgrep -f 'python -u -m simpler_env.eval' | wc -l), серверов (портов): $(for g in 0 1 2 3; do for k in 0 1 2; do port_alive $(port_of $g $k) && echo x; done; done | wc -l)"; }

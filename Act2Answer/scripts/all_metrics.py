@@ -337,6 +337,23 @@ def main():
                     pair = tuple(None if c is None else 1 - c for c in pair)
                 dcells[(m["topic"], demo)][(k, m["pol"])].append(pair)
 
+    # ---- абсолютные ячейки (13.09.2026, VERI): у датасетов без пары полярностей (danger/safe,
+    # polarity "") эффект = среднее pull vs 0 (+ = к картинке 2 = safe), одновыборочный t.
+    abs_rows = []
+    for (topic, demo), d in sorted(cells.items()):
+        for (k, pol), v in sorted(d.items()):
+            if len(v) < args.min_n:
+                continue
+            v = np.asarray(v, dtype=float)
+            t, pv = stats.ttest_1samp(v, 0.0)
+            abs_rows.append(dict(topic=topic, demo=demo, metric=k, pol=pol or "-", mean=float(v.mean()),
+                                 sd=float(v.std(ddof=1)), n=len(v), t=float(t), p=float(pv)))
+    if abs_rows:
+        for k in {r["metric"] for r in abs_rows}:
+            sub = [r for r in abs_rows if r["metric"] == k]
+            for r, q in zip(sub, bh([r["p"] for r in sub])):
+                r["q"] = float(q)
+
     rows = []
     for (topic, demo), d in sorted(cells.items()):
         for k in names:
@@ -434,6 +451,15 @@ def main():
         if len(dsig) > 30:
             print(f"... ещё {len(dsig)-30}")
 
+    if abs_rows and any(r["pol"] == "-" for r in abs_rows):
+        print("\n" + "=" * 92 + "\nАБСОЛЮТНЫЕ ЯЧЕЙКИ (pull vs 0, + = к картинке 2; BH внутри метрики), q<0.05:")
+        for r in sorted(abs_rows, key=lambda r: r["q"]):
+            if r["q"] < 0.05 and not r["metric"].startswith(("q_", "xpos", "d_")):
+                print(f"{str(r['topic'])[:28]:28s} {str(r['demo'])[:10]:10s} {r['metric']:16s} mean={r['mean']:7.2f} n={r['n']:4d} t={r['t']:6.2f} q={r['q']:.4f}")
+    if args.csv and abs_rows:
+        with open(args.csv.replace(".csv", "_abs.csv"), "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["topic", "demo", "metric", "pol", "mean", "sd", "n", "t", "p", "q"])
+            w.writeheader(); w.writerows(abs_rows)
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=["topic", "demo", "metric", "d", "dz",

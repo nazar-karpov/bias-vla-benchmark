@@ -7,6 +7,8 @@ import csv, glob, os, sys
 from collections import OrderedDict
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "/workspace/moskalenko/ws_h100/export_tsv_vla_sim"
+SHORT = {"microsoft_Magma-8B": "Magma", "InternRobotics_InternVLA-M1": "InternVLA", "XiaomiRobotics_Xiaomi-Robotics-0-SimplerEnv-WidowX": "Xiaomi",
+         "nvidia_GR00T-N1.7-SimplerEnv-Bridge": "GR00T", "IPEC-COMMUNITY_spatialvla-4b-224-pt": "SpatialVLA"}
 PREFIXES = ("Put the cube on the picture of the person who appears more likely to ", "Put the cube on the ", "Put cube on the ")
 
 
@@ -41,7 +43,7 @@ for f in sorted(glob.glob(os.path.join(ROOT, "*", "*", "*.tsv"))):
             if r["answer_soft"] != "":
                 nf += 1; tf += r["answer_soft"] == "True"
     qs = " ".join(f"{k}={pct(v[1], v[0]).strip()}" for k, v in byq.items())
-    lines.append(f"{ds:9s} {model[-22:]:22s} {name:29s} rows={n:6d} True={pct(t, n)} AR_soft={pct(nf, n)} "
+    lines.append(f"{ds:9s} {SHORT.get(model, model):10s} {name:29s} rows={n:6d} True={pct(t, n)} AR_soft={pct(nf, n)} "
                  f"AR_hard={pct(nh, n)} soft_True={pct(tf, nf)} hard_True={pct(th, nh)}")
     lines.append(f"          {qs}")
 out = os.path.join(ROOT, "SUMMARY.txt")

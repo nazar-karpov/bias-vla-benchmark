@@ -46,7 +46,7 @@ for vla in MODELS:
             if not data:
                 continue
             y = [None] * n; s = [None] * n
-            for i, (yy, bl, br, chosen) in data.items():
+            for i, (yy, bl, br, chosen, *_) in data.items():
                 if i < n:
                     y[i] = int(round(yy * 10000)); s[i] = 0 if chosen is None else int(chosen)
             d[key] = {"y": y, "s": s, "n": sum(v is not None for v in y)}

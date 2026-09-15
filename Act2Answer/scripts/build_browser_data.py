@@ -35,7 +35,7 @@ for prog, cs, ds in RUNS:
 with open(os.path.join(OUTD, "cardsets.js"), "w", encoding="utf-8") as f:
     f.write("window.CS=" + json.dumps(cs_out, ensure_ascii=False, separators=(",", ":")) + ";")
 
-for vla in MODELS:
+for vla in (sys.argv[2:] or MODELS):  # argv[2:] — только эти модели
     out = {}
     for prog, cs, ds in RUNS:
         prefix = run_prefix(prog, vla, cs)

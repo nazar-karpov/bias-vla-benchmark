@@ -87,7 +87,8 @@ def read(path):
 # вопрос -> (question_id, axis, polarity) из определений кардсетов
 QMAP = {}
 for cs in ("focus_g10", "visbias_g10", "pairs_g10", "focus_e10", "visbias_e10", "pairs_e10",
-           "focus_e10b", "visbias_e10b", "veri_emerg"):
+           "focus_e10b", "visbias_e10b", "veri_emerg",
+           "focus_x3g", "visbias_x3g", "pairs_x3g", "focus_x3e", "visbias_x3e", "pairs_x3e"):
     d = os.path.join(ASSETS, cs)
     if not os.path.isdir(d):
         continue
@@ -206,21 +207,32 @@ def aggregates(vla, rbf_by_ds):
         rbf = rbf_by_ds.get(ds, {})
         # гендер: Δ = pull(pos) − pull(neg), + = к мужчине
         if "gender" in rbf:
-            acc = defaultdict(list)
+            acc, acc3 = defaultdict(list), defaultdict(list)
             for q, t, L, R in toward(rbf["gender"], gender_of, "male"):
                 qid, axis, pol = QMAP[q]
                 acc[(axis, pol, "gender")].append(t)
+                if qid.startswith("x3_"):
+                    acc3[(qid, "gender")].append(t)
             compare(f"{vla} {ds} гендер", delta(acc), f"{MET}/g10_{vla}_{ds}_g10.csv", ("topic", "demo"))
+            if acc3:  # x3: pull против нуля по вопросу
+                compare(f"{vla} {ds} x3 гендер", {k: mean(v) for k, v in acc3.items()},
+                        f"{MET}/x3_{vla}_{ds}_x3g_abs.csv", ("topic", "demo"), "mean")
         # этничность e10: X→white (+ к белому) и all→white; в PAIRS — skin_color
         wf = "ethnicity_white" if ds != "pairs" else "skin_color_white"
         if wf in rbf:
-            acc = defaultdict(list)
+            acc, acc3 = defaultdict(list), defaultdict(list)
             for q, t, L, R in toward(rbf[wf], eth_of, "white"):
                 qid, axis, pol = QMAP[q]
                 other = eth_of(R) if eth_of(L) == "white" else eth_of(L)
                 acc[(axis, pol, f"{other}→white")].append(t)
                 acc[(axis, pol, "all→white")].append(t)
+                if qid.startswith("x3_"):
+                    acc3[(qid, f"{other}→white")].append(t)
+                    acc3[(qid, "all→white")].append(t)
             compare(f"{vla} {ds} этничность e10", delta(acc), f"{MET}/e10_{vla}_{ds}_e10.csv", ("topic", "demo"))
+            if acc3:
+                compare(f"{vla} {ds} x3 этничность", {k: mean(v) for k, v in acc3.items()},
+                        f"{MET}/x3_{vla}_{ds}_x3e_abs.csv", ("topic", "demo"), "mean")
         # e10b: a→b, a раньше b в ETH, оба небелые, + к b
         if ds != "pairs":
             acc = defaultdict(list)
@@ -255,7 +267,8 @@ def raw_spot(vla, rbf_by_ds, k_per=4):
     rnd = random.Random(15)
     runs = [("g10", "focus_g10", "focus"), ("g10", "visbias_g10", "visbias"), ("g10", "pairs_g10", "pairs"),
             ("e10", "focus_e10", "focus"), ("e10", "pairs_e10", "pairs"), ("e10b", "visbias_e10b", "visbias"),
-            ("veri", "veri_emerg", "EMERGENCY")]
+            ("veri", "veri_emerg", "EMERGENCY"), ("x3", "focus_x3g", "focus"), ("x3", "visbias_x3e", "visbias"),
+            ("x3", "pairs_x3e", "pairs")]
     ok = tot = 0
     for prog, cs, ds in runs:
         eps = {int(r["index"]): r for r in csv.DictReader(open(os.path.join(ASSETS, cs, "episodes.csv"), encoding="utf-8"))}

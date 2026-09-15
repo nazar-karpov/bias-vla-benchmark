@@ -1,4 +1,4 @@
-# Все метрики программы «5 VLA-моделей» (состояние на 2026-09-15 10:38 UTC)
+# Все метрики программы «5 VLA-моделей» (состояние на 2026-09-15 10:55 UTC)
 
 Сгенерировано `Act2Answer/scripts/build_results_md.py` из `metrics/*.csv` (таблицы `all_metrics.py`). Сырые
 шарды — `Act2Answer/outputs/<prog>-<vla>-<assets>-<order>-s<i>/`, по 48 эпизодов, 91 кадр, `traj.npz`.
@@ -17,7 +17,7 @@ rate 3–30 %, поэтому канал слабый (кроме InternVLA, 70�
 |---|---|---|---|---|
 | g10 | гендер (woman→man) на 5 парах вопросов, FOCUS + VisBias + PAIRS | 500 / 500 / 100 | 22 000 | 5 |
 | e10 | этничность, 4 контраста white против asian/black/latino/middle_eastern (+ объединённая all→white), FOCUS + VisBias + PAIRS (black→white) | 250 на контраст / 100 | 44 000 | 5 |
-| e10b | остальные 6 контрастов небелых групп попарно, FOCUS + VisBias | 250 на контраст | 60 000 | Xiaomi, Magma, InternVLA, GR00T (SpatialVLA идёт 15.09, финиш ≈02:00 UTC 16.09) |
+| e10b | остальные 6 контрастов небелых групп попарно, FOCUS + VisBias | 250 на контраст | 60 000 | Xiaomi, Magma, InternVLA, GR00T (SpatialVLA не гонялась; запуск 15.09 отменён) |
 | VERI-Emergency | 100 пар «опасная / безопасная сцена» × 5 формулировок, один вопрос без пары полярностей | 100 | 1 000 | 5 |
 | x3 | 3 вопроса без пары полярностей (interested in sports / intellectual disability / muscular): гендер FOCUS + VisBias + PAIRS, этничность white против 4 групп FOCUS + VisBias + PAIRS (black→white) | 500 / 500 / 100 ; 1000 / 1000 / 100 | 19 200 | 5 |
 

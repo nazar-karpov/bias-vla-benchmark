@@ -39,7 +39,10 @@ MODELS = {"magma": "microsoft_Magma-8B", "internvla": "InternRobotics_InternVLA-
 RUNS = [("g10", "focus_g10", "focus"), ("g10", "visbias_g10", "visbias"), ("g10", "pairs_g10", "pairs"),
         ("e10", "focus_e10", "focus"), ("e10", "visbias_e10", "visbias"), ("e10", "pairs_e10", "pairs"),
         ("e10b", "focus_e10b", "focus"), ("e10b", "visbias_e10b", "visbias"),
-        ("veri", "veri_emerg", "EMERGENCY")]
+        ("veri", "veri_emerg", "EMERGENCY"),
+        # x3: 3 вопроса без пары полярностей — строки ложатся в те же gender / ethnicity_<v> / skin_color_<v>.tsv
+        ("x3", "focus_x3g", "focus"), ("x3", "visbias_x3g", "visbias"), ("x3", "pairs_x3g", "pairs"),
+        ("x3", "focus_x3e", "focus"), ("x3", "visbias_x3e", "visbias"), ("x3", "pairs_x3e", "pairs")]
 SPLIT = {"tsv:gender": ("gender", False), "tsv:ethnicity": ("ethnicity", True),
          "tsv:skin_color": ("skin_color", True), "tsv:pairs": ("safety", False)}
 
@@ -87,10 +90,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--vla", nargs="*", default=list(MODELS))
+    ap.add_argument("--prog", nargs="*", default=None,
+                    help="только эти программы (g10 e10 e10b veri x3), чтобы дописать их в готовую выгрузку")
     args = ap.parse_args()
     for vla in args.vla:
         mname = MODELS[vla]
         for prog, cs, ds in RUNS:
+            if args.prog and prog not in args.prog:
+                continue
             prefix = run_prefix(prog, vla, cs)
             ns, sw = load_run(prefix, "noswap"), load_run(prefix, "swap")
             if not ns and not sw:

@@ -29,7 +29,7 @@ lines = ["Доля True (робот принёс куб к группе файл
          "Байес = разница между полярностями одной пары (pilot vs FA, wealthy vs poor ...), а не отклонение от 50.", ""]
 for f in sorted(glob.glob(os.path.join(ROOT, "*", "*", "*.tsv"))):
     ds, model, name = f.split(os.sep)[-3:]
-    n = t = nh = th = nf = tf = 0
+    n = t = nh = th = nf = tf = nr = 0
     byq = OrderedDict()
     with open(f, encoding="utf-8") as fh:
         for r in csv.DictReader(fh, delimiter="\t"):
@@ -40,11 +40,13 @@ for f in sorted(glob.glob(os.path.join(ROOT, "*", "*", "*.tsv"))):
             q[0] += 1; q[1] += v
             if r["answer_hard"] != "":
                 nh += 1; th += r["answer_hard"] == "True"
+            if r.get("answer_soft_release", "") != "":
+                nr += 1
             if r["answer_soft"] != "":
                 nf += 1; tf += r["answer_soft"] == "True"
     qs = " ".join(f"{k}={pct(v[1], v[0]).strip()}" for k, v in byq.items())
     lines.append(f"{ds:9s} {SHORT.get(model, model):10s} {name:29s} rows={n:6d} True={pct(t, n)} AR_soft={pct(nf, n)} "
-                 f"AR_hard={pct(nh, n)} soft_True={pct(tf, nf)} hard_True={pct(th, nh)}")
+                 f"AR_hard={pct(nh, n)} AR_soft_rel={pct(nr, n)} soft_True={pct(tf, nf)} hard_True={pct(th, nh)}")
     lines.append(f"          {qs}")
 out = os.path.join(ROOT, "SUMMARY.txt")
 open(out, "w", encoding="utf-8").write("\n".join(lines) + "\n")

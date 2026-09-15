@@ -21,7 +21,8 @@ MODELS = {"magma": "microsoft_Magma-8B", "internvla": "InternRobotics_InternVLA-
           "xiaomi": "XiaomiRobotics_Xiaomi-Robotics-0-SimplerEnv-WidowX",
           "gr00t": "nvidia_GR00T-N1.7-SimplerEnv-Bridge", "spatialvla": "IPEC-COMMUNITY_spatialvla-4b-224-pt"}
 ETH = ["asian", "black", "latino", "middle_eastern", "white"]
-HEADER = ["image_left", "image_right", "question", "answer_side", "answer_soft", "answer_hard", "y_release_mm"]
+HEADER = ["image_left", "image_right", "question", "answer_side", "answer_soft", "answer_hard", "y_release_mm",
+          "answer_soft_release"]
 PROBLEMS = []
 
 
@@ -88,7 +89,7 @@ def read(path):
 QMAP = {}
 for cs in ("focus_g10", "visbias_g10", "pairs_g10", "focus_e10", "visbias_e10", "pairs_e10",
            "focus_e10b", "visbias_e10b", "veri_emerg",
-           "focus_x3g", "visbias_x3g", "pairs_x3g", "focus_x3e", "visbias_x3e", "pairs_x3e"):
+           "focus_x3g", "visbias_x3g", "pairs_x3g", "focus_x3e", "visbias_x3e", "pairs_x3e", "focus_x3b", "visbias_x3b"):
     d = os.path.join(ASSETS, cs)
     if not os.path.isdir(d):
         continue
@@ -107,9 +108,9 @@ def check_file(path, rows_by_file):
     head, rows = read(path)
     if head != HEADER:
         bad(f"{path}: заголовок {head}")
-    n_side = n_hs = n_pair = n_swap = 0
+    n_side = n_hs = n_pair = n_swap = n_rel = 0
     for i, r in enumerate(rows):
-        L, R, q, a_side, a_soft, a_hard, y = r
+        L, R, q, a_side, a_soft, a_hard, y, a_rel = r
         aL, aR = f_of(L), f_of(R)
         if aL is None or aR is None:
             bad(f"{path}:{i+2}: не разобрал имя {L} / {R}")
@@ -122,6 +123,8 @@ def check_file(path, rows_by_file):
             n_side += 1
         if a_hard != "" and a_soft != a_hard:
             n_hs += 1
+        if a_rel not in ("True", "False", "") or (a_rel != "" and a_rel != a_side):
+            n_rel += 1    # soft-зона при отпускании лежит на стороне знака y — обязана совпадать с answer_side
         if a_side not in ("True", "False") or a_soft not in ("True", "False", "") or a_hard not in ("True", "False", ""):
             bad(f"{path}:{i+2}: значения {a_side}/{a_soft}/{a_hard}")
         if i % 2 == 1:
@@ -132,7 +135,8 @@ def check_file(path, rows_by_file):
     for cnt, what in ((n_side, "answer_side ≠ признак картинки на стороне знака y"),
                       (n_pair, "признак файла не ровно у одной картинки"),
                       (n_hs, "hard задан, а soft с ним не совпадает"),
-                      (n_swap, "swap-строка ≠ переставленная noswap")):
+                      (n_swap, "swap-строка ≠ переставленная noswap"),
+                      (n_rel, "answer_soft_release не совпадает с answer_side")):
         if cnt:
             bad(f"{path}: {cnt} строк: {what}")
     return len(rows)
@@ -235,7 +239,7 @@ def aggregates(vla, rbf_by_ds):
                         f"{MET}/x3_{vla}_{ds}_x3e_abs.csv", ("topic", "demo"), "mean")
         # e10b: a→b, a раньше b в ETH, оба небелые, + к b
         if ds != "pairs":
-            acc = defaultdict(list)
+            acc, acc3b = defaultdict(list), defaultdict(list)
             for b in ETH[:-1]:
                 fn = f"ethnicity_{b}"
                 if fn not in rbf:
@@ -246,9 +250,14 @@ def aggregates(vla, rbf_by_ds):
                         continue
                     qid, axis, pol = QMAP[q]
                     acc[(axis, pol, f"{other}→{b}")].append(t)
+                    if qid.startswith("x3_"):
+                        acc3b[(qid, f"{other}→{b}")].append(t)
             vals = delta(acc)
             if vals:
                 compare(f"{vla} {ds} этничность e10b", vals, f"{MET}/e10b_{vla}_{ds}_e10b.csv", ("topic", "demo"))
+            if acc3b:  # x3b: pull против нуля по вопросу, + = к более поздней группе
+                compare(f"{vla} {ds} x3b этничность", {k: mean(v) for k, v in acc3b.items()},
+                        f"{MET}/x3b_{vla}_{ds}_x3b_abs.csv", ("topic", "demo"), "mean")
     # VERI: pull vs 0 по вопросу, + к безопасной сцене
     rbf = rbf_by_ds.get("EMERGENCY", {})
     if "answers" in rbf:

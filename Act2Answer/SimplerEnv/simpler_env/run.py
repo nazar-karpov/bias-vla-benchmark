@@ -411,26 +411,32 @@ class Runner:
         # прогон), GPU в это время простаивает. Для метрик видео не нужны — всё
         # считается из stats.yaml / traj.npz. Отключается A2A_SAVE_VIDEO=0.
         _n_video = self.args.num_envs if os.environ.get("A2A_SAVE_VIDEO", "1") != "0" else 0
+        # A2A_VIDEO_CLEAN=1 — «сырые» кадры камеры для монтажа (демо-ролики к видео статьи): без апскейла,
+        # без подписи и без info-оверлея; A2A_VIDEO_QUALITY — качество imageio 0..10 (по умолчанию 5).
+        _clean = os.environ.get("A2A_VIDEO_CLEAN", "0") == "1"
+        _quality = float(os.environ.get("A2A_VIDEO_QUALITY", "5"))
         for i in range(_n_video):
             images = datas[i]["image"]
             infos = datas[i]["info"]
             assert len(images) == len(infos) + 1
 
-            for _k in range(len(images)):
-                images[_k] = _upscale_for_video(images[_k])
+            if not _clean:
+                for _k in range(len(images)):
+                    images[_k] = _upscale_for_video(images[_k])
 
-            if self.args.render_info:
+            if self.args.render_info and not _clean:
                 for j in range(len(infos)):
                     images[j + 1] = visualization.put_info_on_image(
                         images[j + 1], infos[j], extras=[f"Ins: {instruction[i]}"]
                     )
 
-            for _k in range(len(images)):
-                images[_k] = _overlay_instruction(images[_k], instruction[i])
+            if not _clean:
+                for _k in range(len(images)):
+                    images[_k] = _overlay_instruction(images[_k], instruction[i])
 
             success = int(infos[-1]["success"])
             images_to_video(
-                images, str(exp_dir), f"video_{i}-s_{success}", fps=10, verbose=False
+                images, str(exp_dir), f"video_{i}-s_{success}", fps=10, quality=_quality, verbose=False
             )
 
         # infos

@@ -10,6 +10,8 @@
 Вход: перепрогон демо-кардсетов (Act2Answer/scripts/record_gif_demos.sh) и outcomes.csv (outcomes.py).
 Выход в --out: gif/ (1280×720), gif_light/ (960×540), mp4/ (1920×1080, 24 fps), poster/ (последний кадр).
 Вариант --variant clean — только панели и подсветка, без шапки и подвала (под свои титры в монтаже).
+Вариант --variant raw — каждый порядок отдельным клипом: полный кадр камеры 1280×960 с обводкой выбранной плитки,
+без шапки и подвала, тот же тайминг, что у парного ролика → raw_selected/{mp4,gif}/<name>__{original,swapped}_order.
 
   python compose_category_gif.py --select selection.json --out ~/ws/video_gifs
   python compose_category_gif.py --key C4_sahp_magma --run magma --idx 33 --out /tmp/try
@@ -156,15 +158,18 @@ def quad_to_panel(q, k):
 _HL = {}
 
 
-def highlight_layer(quad, color, t):
-    """Обводка выбранной плитки; t ∈ (0,1] — фаза появления. Фаз всего несколько — слои кэшируются."""
-    key = (tuple(map(tuple, np.round(quad, 2))), color, round(float(t), 3))
+def highlight_layer(quad, color, t, canvas=None, bounds=None):
+    """Обводка выбранной плитки; t ∈ (0,1] — фаза появления. Фаз всего несколько — слои кэшируются.
+    canvas — размер слоя (по умолчанию весь ролик W×H), bounds — (x0, y0, x1, y1) области, внутри которой
+    держать ярлык «selected» (по умолчанию панель, в которой лежит плитка)."""
+    CW, CH = canvas or (W, H)
+    key = (tuple(map(tuple, np.round(quad, 2))), color, round(float(t), 3), (CW, CH), bounds)
     if key in _HL:
         return _HL[key]
     ss = 2
     q = [(x * ss, y * ss) for x, y in quad]
     col = hexrgb(color)
-    lay = Image.new("RGBA", (W * ss, H * ss), (0, 0, 0, 0))
+    lay = Image.new("RGBA", (CW * ss, CH * ss), (0, 0, 0, 0))
     glow = Image.new("RGBA", lay.size, (0, 0, 0, 0))
     ImageDraw.Draw(glow).line(q + [q[0]], fill=col[:3] + (int(200 * t),), width=26 * ss, joint="curve")
     lay = Image.alpha_composite(lay, glow.filter(ImageFilter.GaussianBlur(10 * ss)))
@@ -172,16 +177,18 @@ def highlight_layer(quad, color, t):
     ImageDraw.Draw(fill).polygon(q, fill=col[:3] + (int(34 * t),))
     lay = Image.alpha_composite(lay, fill)
     ImageDraw.Draw(lay).line(q + [q[0]], fill=col[:3] + (int(255 * t),), width=int((7 + 8 * (1 - t)) * ss), joint="curve")
-    lay = lay.resize((W, H), Image.LANCZOS)
+    lay = lay.resize((CW, CH), Image.LANCZOS)
     if t > 0.5:
         d = ImageDraw.Draw(lay)
         (x1, y1), (x2, y2) = sorted(quad, key=lambda p: p[1])[:2]       # дальняя кромка плитки
         cx, top_y = (x1 + x2) / 2, min(y1, y2)
         f = font("Bold", 26); txt = "✓  selected"
         tw = f.getlength(txt) + 34
-        k = 0 if cx < PX[1] else 1
-        x0 = min(max(cx - tw / 2, PX[k] + 12), PX[k] + PW - tw - 12)
-        y0 = max(top_y - 60, PY + 12)
+        if bounds is None:
+            k = 0 if cx < PX[1] else 1
+            bounds = (PX[k], PY, PX[k] + PW, PY + PH)
+        x0 = min(max(cx - tw / 2, bounds[0] + 12), bounds[2] - tw - 12)
+        y0 = max(top_y - 60, bounds[1] + 12)
         a = int(255 * min(1, (t - 0.5) * 2))
         d.rounded_rectangle((x0, y0, x0 + tw, y0 + 44), 22, fill=col[:3] + (a,))
         d.text((x0 + tw / 2, y0 + 22), txt, font=f, fill=(255, 255, 255, a), anchor="mm")
@@ -265,9 +272,73 @@ def compose(key, run, idx, outdir, variant="full", play_fps=8, intro_s=1.4, outr
                 strict_end={o: int(e[o].strict) for o in e})
 
 
+RAW_SCALE = 2                                       # 640×480 → 1280×960
+
+
+def compose_raw(key, run, idx, outdir, play_fps=8, intro_s=1.4, outro_s=2.4, tail=10, name=None):
+    """Вариант raw_selected: каждый порядок отдельным роликом, полный кадр камеры без шапки и подвала,
+    но с той же обводкой выбранной плитки в момент отпускания. Тайминг тот же, что у парного ролика
+    (одинаковая длина обоих порядков), так что клипы можно класть на монтаж рядом с ним."""
+    oc, cand, questions, geo = load_tables()
+    e = {o: oc[(oc.key == key) & (oc.run == run) & (oc.idx == idx) & (oc.order == o)].iloc[0] for o in ("noswap", "swap")}
+    ccol = CATS[key.split("_")[0]][1]
+    vids = {o: iio.imread(e[o].video) for o in e}
+    rel = {o: int(e[o].rel_frame) for o in e}
+    side = {o: int(e[o].side_rel) for o in e}
+    end = min(80, max(rel.values()) + tail)
+    h0, w0 = vids["noswap"].shape[1:3]
+    CW, CH = w0 * RAW_SCALE, h0 * RAW_SCALE
+    name = name or key
+    ff = imageio_ffmpeg.get_ffmpeg_exe()
+    for sub in ("mp4", "gif"):
+        os.makedirs(os.path.join(outdir, sub), exist_ok=True)
+    out = {}
+    for o, tag in (("noswap", "original_order"), ("swap", "swapped_order")):
+        tmp = tempfile.mkdtemp(prefix="raw_")
+        n = 0
+
+        def frame(i):
+            fr = vids[o][min(i, len(vids[o]) - 1)]
+            img = Image.fromarray(fr).convert("RGBA").resize((CW, CH), Image.LANCZOS)
+            s = rel[o] + 2
+            t = 0.0 if i < s else min(1.0, (i - s + 1) / 4)
+            if t > 0 and side[o] in (1, 2):
+                quad = [(x * RAW_SCALE, y * RAW_SCALE) for x, y in geo["quadL" if side[o] == 1 else "quadR"]]
+                img = Image.alpha_composite(img, highlight_layer(quad, ccol, t, canvas=(CW, CH), bounds=(0, 0, CW, CH)))
+            return img
+
+        def emit(img):
+            nonlocal n
+            img.convert("RGB").save(os.path.join(tmp, f"f_{n:04d}.png"), compress_level=1)
+            n += 1
+
+        first = frame(0)
+        for _ in range(int(round(intro_s * play_fps))):
+            emit(first)
+        last = first
+        for i in range(1, end + 1):
+            last = frame(i); emit(last)
+        for _ in range(int(round(outro_s * play_fps))):
+            emit(last)
+        src = ["-framerate", str(play_fps), "-i", os.path.join(tmp, "f_%04d.png")]
+        fn = f"{name}__{tag}"
+        subprocess.run([ff, "-nostdin", "-y", "-v", "error", *src, "-vf", "fps=24,format=yuv420p", "-c:v", "libx264",
+                        "-crf", "14", "-preset", "slow", "-movflags", "+faststart", os.path.join(outdir, "mp4", f"{fn}.mp4")], check=True)
+        vf = "scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=full[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle"
+        subprocess.run([ff, "-nostdin", "-y", "-v", "error", *src, "-filter_complex", vf, "-loop", "0",
+                        os.path.join(outdir, "gif", f"{fn}.gif")], check=True)
+        shutil.rmtree(tmp, ignore_errors=True)
+        out[tag] = dict(frames=n, seconds=round(n / play_fps, 2), release_frame=rel[o], side_at_release=side[o])
+    return dict(name=name, key=key, run=run, idx=idx, variant="raw", size=[CW, CH], clips=out)
+
+
 def _run_task(arg):
     """((job, variant), out, fps) -> запись манифеста; отдельная функция — чтобы работал пул процессов."""
     (j, variant), out_root, fps = arg
+    if variant == "raw":
+        r = compose_raw(j["key"], j["run"], j["idx"], os.path.join(out_root, "raw_selected"), play_fps=fps, name=j.get("name"))
+        r["note"] = j.get("note", "")
+        return r
     out = out_root if variant == "full" else os.path.join(out_root, "clean")
     r = compose(j["key"], j["run"], j["idx"], out, variant=variant, play_fps=fps, name=j.get("name"))
     r.update(variant=variant, note=j.get("note", ""))
@@ -278,13 +349,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--select", help="JSON-список {name,key,run,idx} — собрать все")
     ap.add_argument("--key"); ap.add_argument("--run"); ap.add_argument("--idx", type=int)
-    ap.add_argument("--name"); ap.add_argument("--variant", default="full", choices=("full", "clean"))
+    ap.add_argument("--name"); ap.add_argument("--variant", default="full", choices=("full", "clean", "raw"))
     ap.add_argument("--out", default=os.path.expanduser("~/ws/video_gifs"))
     ap.add_argument("--fps", type=float, default=8)
     ap.add_argument("--procs", type=int, default=8, help="параллельных процессов в режиме --select")
     a = ap.parse_args()
     jobs = json.load(open(a.select)) if a.select else [dict(name=a.name or a.key, key=a.key, run=a.run, idx=a.idx)]
-    tasks = [((j, v), a.out, a.fps) for j in jobs for v in ((a.variant,) if not a.select else ("full", "clean"))]
+    tasks = [((j, v), a.out, a.fps) for j in jobs for v in ((a.variant,) if not a.select else ("full", "clean", "raw"))]
     if a.select and a.procs > 1:
         from concurrent.futures import ProcessPoolExecutor
         with ProcessPoolExecutor(a.procs) as ex:

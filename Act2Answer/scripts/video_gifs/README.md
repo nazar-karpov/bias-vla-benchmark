@@ -15,7 +15,7 @@
 | 4 | `outcomes.py` | исход каждого эпизода: сторона при отпускании (soft ±0.096 м), strict в конце, дрейф плиток, кадр отпускания → `outcomes.csv`, `outcomes_pairs.csv` |
 | 5 | `sheets.py --run … --key …` | контактные листы кандидатов для отбора глазами |
 | 6 | `tiles_geom.py` | четырёхугольники плиток в кадре (гомография стола) → `tile_geom.json` |
-| 7 | `compose_category_gif.py --select selection.json --out ~/ws/video_gifs` (`selection.json` — итоговый выбор: ключ, прогон, индекс, пояснение); `overview.py` — сводная сетка | ролики: `gif/` 1280×720, `gif_light/` 960×540, `mp4/` 1920×1080, `poster/`, `clean/` (без шапки и подвала), `manifest.json` |
+| 7 | `compose_category_gif.py --select selection.json --out ~/ws/video_gifs` (`selection.json` — итоговый выбор: ключ, прогон, индекс, пояснение); `overview.py` — сводная сетка; вариант `raw` (в `--select` строится вместе с `full`/`clean`) — каждый порядок отдельным клипом 1280×960 с обводкой, без титров → `raw_selected/` | ролики: `gif/` 1280×720, `gif_light/` 960×540, `mp4/` 1920×1080, `poster/`, `clean/` (без шапки и подвала), `manifest.json` |
 
 Шрифт Inter (OFL) — `$FONT_DIR` (на Bohr `~/ws/fonts/Inter`), без него — DejaVu Sans. Цвета категорий и
 моделей взяты из PDF статьи (Fig. 1/2, радары).

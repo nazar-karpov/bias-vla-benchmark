@@ -17,6 +17,10 @@
 | 6 | `tiles_geom.py` | четырёхугольники плиток в кадре (гомография стола) → `tile_geom.json` |
 | 7 | `compose_category_gif.py --select selection.json --out ~/ws/video_gifs` (`selection.json` — итоговый выбор: ключ, прогон, индекс, пояснение); `overview.py` — сводная сетка; вариант `raw` (в `--select` строится вместе с `full`/`clean`) — каждый порядок отдельным клипом 1280×960 с обводкой, без титров → `raw_selected/` | ролики: `gif/` 1280×720, `gif_light/` 960×540, `mp4/` 1920×1080, `poster/`, `clean/` (без шапки и подвала), `manifest.json` |
 
+`make_category_grid.py --out ~/ws/video_gifs/deck` — материалы для презентации: сетка 4 × 2 по категориям в формате превью
+Act2Answer (чип категории + плашка инструкции на плитке, `category_grid.gif/mp4`) и пары «исходный / зеркальный порядок»
+для отдельных слайдов (`pair_<name>.gif`, вырез из clean-роликов).
+
 Шрифт Inter (OFL) — `$FONT_DIR` (на Bohr `~/ws/fonts/Inter`), без него — DejaVu Sans. Цвета категорий и
 моделей взяты из PDF статьи (Fig. 1/2, радары).
 

@@ -30,8 +30,9 @@ N=19300; SH=48
 HANG_MIN=${HANG_MIN:-30}; MAX_TRIES=${MAX_TRIES:-6}; POLL=${POLL:-120}
 STOPF=$WS/_q193_driver.stop
 rm -f "$STOPF"; echo $$ > $WS/_q193_driver.pid
-declare -a MI TRIES LASTMISS
-for g in 0 1 2 3; do MI[$g]=0; TRIES[$g]=0; LASTMISS[$g]=-1; done
+declare -a MI TRIES LASTMISS OOMWAIT
+for g in 0 1 2 3; do MI[$g]=0; TRIES[$g]=0; LASTMISS[$g]=-1; OOMWAIT[$g]=0; done
+OOM_WAIT=${OOM_WAIT:-600}   # 29.09: на ноде учится чужая модель (tmux 29i_kos) — OOM не считаем попыткой, ждём память
 declare -A METRICS_STARTED
 
 log() { echo "$(date '+%m-%d %H:%M:%S') $*"; }
@@ -79,6 +80,10 @@ kill_client() {  # pid v a o — только если это наш клиен�
   return 0
 }
 gpu_util() { nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -i $1 2>/dev/null | tr -d ' '; }
+oom_in_log() {  # v a o — последний запуск (после последнего START_G10) упал по памяти?
+  awk 'BEGIN{IGNORECASE=1} /START_G10/{f=0} /out of memory|OutOfMemoryError|CUDA_ERROR_OUT_OF_MEMORY|DONE_G10.*rc=135/{f=1} END{exit !f}' \
+    "$(logf $1 $2 $3)" 2>/dev/null
+}
 
 launch_gpu() {  # g v
   local g=$1 v=$2 a=${COND[$1]%%:*} o=${COND[$1]##*:}
@@ -122,6 +127,20 @@ while :; do
         continue
       fi
       if [ -z "$cp_" ]; then                              # цепочки нет, а шарды недоделаны → (пере)запуск
+        now=$(date +%s)
+        if [ "${OOMWAIT[$g]}" -gt 0 ]; then               # после OOM ждём, пока освободится память карты
+          if [ $now -lt ${OOMWAIT[$g]} ]; then status+=" | GPU$g $v ждёт память, осталось $m"; break; fi
+          OOMWAIT[$g]=0; LASTMISS[$g]=$m
+          launch_gpu $g $v; TRIES[$g]=$((TRIES[$g]-1))   # повтор после OOM попыткой не считается
+          status+=" | GPU$g $v осталось $m/$(( (N+SH-1)/SH ))"
+          break
+        fi
+        if [ "${LASTMISS[$g]}" -ge 0 ] && oom_in_log $v $a $o; then   # упал по памяти (чужой процесс на карте?)
+          OOMWAIT[$g]=$((now + OOM_WAIT))
+          log "GPU$g: ⚠ $v $a $o упал по памяти (OOM) — повтор через $((OOM_WAIT / 60)) мин, попытка не считается; карта: $(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader -i $g)"
+          status+=" | GPU$g $v ждёт память, осталось $m"
+          break
+        fi
         [ "${LASTMISS[$g]}" -ge 0 ] && [ "$m" -lt "${LASTMISS[$g]}" ] && TRIES[$g]=0
         if [ ${TRIES[$g]} -ge $MAX_TRIES ]; then
           log "GPU$g: ❌ $v $a $o — $MAX_TRIES запусков без прогресса, осталось $m шардов; ПРОПУСКАЮ модель на карте"

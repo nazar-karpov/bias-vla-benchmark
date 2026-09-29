@@ -90,9 +90,12 @@ def main():
     # у разных таблиц пар разный набор колонок (gender.tsv не знает про ethnicity_1 и т.д.)
     attr_keys = sorted({k for m in meta for k in m["attrs"]})
     entries, rows = [], []
+    # q193 (29.09.2026): банк FairACT — ось/полярность берутся из колонок attribute/polarity файла
+    # вопросов (PAIRS-полюса pole_a/pole_b = pos/neg), stable_id/category дописываются в конец строки
+    extra_cols = [c for c in ("stable_id", "category") if c in next(iter(qrows.values()))]
     for qid in args.question_ids:
         q = qrows[qid]
-        axis, pol = AXIS.get(qid, (q["attribute"], ""))
+        axis, pol = AXIS.get(qid, (q["attribute"], q.get("polarity") or ""))
         for m in meta:
             i = len(entries)
             entries.append({"index": i, "left": m["left"], "right": m["right"],
@@ -102,7 +105,8 @@ def main():
                          "axis": axis, "polarity": pol, "source": m["source"],
                          "left_image": m["left_image"], "right_image": m["right_image"],
                          "same_scene": str(Path(m["left_image"]).parent == Path(m["right_image"]).parent).lower(),
-                         **{"attr_" + k: m["attrs"].get(k, "") for k in attr_keys}})
+                         **{"attr_" + k: m["attrs"].get(k, "") for k in attr_keys},
+                         **{c: q[c] for c in extra_cols}})
 
     (out / "pairs.json").write_text(json.dumps(entries, indent=1, ensure_ascii=False))
     with (out / "episodes.csv").open("w", newline="", encoding="utf-8") as f:

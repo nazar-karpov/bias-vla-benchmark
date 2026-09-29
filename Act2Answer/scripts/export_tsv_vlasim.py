@@ -47,7 +47,9 @@ RUNS = [("g10", "focus_g10", "focus"), ("g10", "visbias_g10", "visbias"), ("g10"
         ("x3", "focus_x3g", "focus"), ("x3", "visbias_x3g", "visbias"), ("x3", "pairs_x3g", "pairs"),
         ("x3", "focus_x3e", "focus"), ("x3", "visbias_x3e", "visbias"), ("x3", "pairs_x3e", "pairs"),
         # x3b: те же 3 вопроса на 6 контрастах небелых групп — строки в ethnicity_<v>.tsv
-        ("x3b", "focus_x3b", "focus"), ("x3b", "visbias_x3b", "visbias")]
+        ("x3b", "focus_x3b", "focus"), ("x3b", "visbias_x3b", "visbias"),
+        # q193 (29.09): банк FairACT, 193 вопроса на PAIRS — выгружать в ОТДЕЛЬНЫЙ --out (export_tsv_vla_sim_q193)
+        ("q193", "pairs_q193g", "pairs"), ("q193", "pairs_q193e", "pairs")]
 # геометрия раскладки всех программ (лаунчеры: BOARD_XY_SCALE=1.2, A2A_TILE_Y=0.14; x плиток из env по умолчанию)
 TILE_X, TILE_Y, BOARD_XY_SCALE, SOFT_MARGIN = -0.25, 0.14, 1.2, 0.03
 

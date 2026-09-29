@@ -2,6 +2,8 @@
 # 1) по вопросам (--topic-col question_id): pull vs 0 → *_abs.csv, дискретный → *_discrete.csv
 # 2) по осям (axis): Δ pos−neg для пар полюсов PAIRS (pole_a/pole_b) → q193ax_*.csv
 # 3) TSV-выгрузка эпизодов (формат export_tsv_vlasim) в ОТДЕЛЬНУЮ папку export_tsv_vla_sim_q193
+# 4) сводка в метрике статьи (SPD/DPR/SC по вопросам и категориям) → metrics/q193_{spd,cat}_<vla>.csv,
+#    docs/Q193_RESULTS.md (все модели, у которых есть выгрузка; + 7 вопросов банка из прежних программ)
 V=$1; export TZ=UTC REPO_ROOT=/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer
 P=/workspace/moskalenko/conda/envs/magma_act2answer/bin/python
 R=/workspace/moskalenko/bias-vla-benchmark-main; A=$R/Act2Answer; mkdir -p $R/metrics
@@ -26,3 +28,5 @@ esac
 rm -rf "$X/pairs/$M"
 nice -n 10 $P $A/scripts/export_tsv_vlasim.py --out $X --vla $V --prog q193 2>&1 | tail -4
 echo "EXPORT_DONE $(date)"
+nice -n 10 $P $A/scripts/q193_summary.py --with-old --export-root $X --md $R/docs/Q193_RESULTS.md 2>&1 | tail -8
+echo "SUMMARY_DONE $(date)"

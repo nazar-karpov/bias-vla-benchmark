@@ -1,43 +1,53 @@
 #!/usr/bin/env bash
-# Оркестратор программы q193 (29.09.2026, нода job 88d2b211 = h100q5, 4×H100, квота 48 ядер).
-# Банк FairACT: 193 вопроса × PAIRS (100 gender + 100 skin_color) × 2 порядка = 77 200 эп. на модель.
-# Карта g всегда гоняет своё условие COND[g] (по 19 300 эп.); модели идут по карте друг за другом
-# (конвейер): как только условие g модели V готово, сервер V на карте g гасится и карта берёт
-# следующую модель — хвоста с простоем нет. Упавшую цепочку перезапускает (run_g10_magma.sh
-# продолжает с первого недостающего шарда), зависшего клиента (лог молчит > HANG_MIN мин) убивает
-# по проверенному pid. Метрики модели — когда готовы все 4 её условия (_q193_metrics.sh, в фоне).
+# Оркестратор программы q193, v3 (29.09.2026 ~23:00 UTC): планировщик по картам С УЧЁТОМ СВОБОДНОЙ ПАМЯТИ.
+# Нода h100q5 (job 88d2b211, 4×H100) общая: студент из tmux 29i_kos учит модель на тех же картах (до 41 ГБ на карту).
 #
-#   (setsid nohup bash ~/ws/_q193_driver.sh > ~/ws/_q193_driver_h100q5.log 2>&1 < /dev/null &)
-#   touch ~/ws/_q193_driver.stop  — выйти после текущей итерации (прогоны не трогает)
+# Карта g всегда гоняет своё условие COND[g] (pairs_q193g/e × noswap/swap, по 19 300 эп.). Порядок моделей —
+# приоритет: magma → internvla → xiaomi → gr00t → spatialvla. Когда на карте ничего нашего не идёт:
+#   * первая по приоритету модель с недоделанным условием, если хватает свободной памяти (NEED, ГБ) — полный
+#     диапазон (run_g10_magma.sh сам продолжит с первого недостающего шарда);
+#   * если ей памяти не хватает (чужая задача) — ПОДМЕНА: следующая по приоритету модель, которой хватает, но
+#     кусками по CHUNK шардов (после куска планировщик решает заново → карта вернётся к старшей модели, как
+#     только освободится память);
+#   * наши простаивающие серверы других моделей на карте перед запуском гасятся (их память учитывается как свободная).
+# Падение по OOM → пауза OOM_WAIT для этой пары (карта, модель), попыткой не считается. Прочие падения — попытки;
+# MAX_TRIES подряд без прогресса → модель на этой карте пропускается (❌). Зависание (лог молчит HANG_MIN мин) →
+# kill клиента по проверенному pid. Чужие процессы не трогаем никогда.
+# Метрики модели — когда все 4 её условия готовы (_q193_metrics.sh, в фоне).
+#
+#   (setsid nohup bash ~/ws/_q193_driver.sh >> ~/ws/_q193_driver_h100q5.log 2>&1 < /dev/null &)
+#   DRY=1 bash ~/ws/_q193_driver_v3.sh   — одна итерация: показать решения, ничего не запускать
+#   touch ~/ws/_q193_driver.stop         — выйти после текущей итерации (прогоны не трогает)
 set -u
 export TZ=UTC
-# защита от второго экземпляра (дубли сессий 13.09 убили PID 1): pid-файл на локальном /tmp +
-# проверка cmdline. flock не годится — fd лока наследуют запущенные цепочки и держат его сутками.
+DRY=${DRY:-0}
 PIDF=/tmp/_q193_driver.pid
-if [ -f $PIDF ]; then
-  op=$(cat $PIDF)
-  if [ -n "$op" ] && [ "$op" != $$ ] && tr '\0' ' ' < /proc/$op/cmdline 2>/dev/null | grep -q "_q193_driver.sh"; then
-    echo "$(date) драйвер уже работает на этой ноде (pid $op) — выхожу"; exit 1
+if [ "$DRY" != 1 ]; then
+  if [ -f $PIDF ]; then
+    op=$(cat $PIDF)
+    if [ -n "$op" ] && [ "$op" != $$ ] && tr '\0' ' ' 2>/dev/null < /proc/$op/cmdline | grep -q "_q193_driver"; then
+      echo "$(date) драйвер уже работает на этой ноде (pid $op) — выхожу"; exit 1
+    fi
   fi
+  echo $$ > $PIDF
 fi
-echo $$ > $PIDF
 
 R=/workspace/moskalenko/bias-vla-benchmark-main; A=$R/Act2Answer; S=$A/scripts; OUT=$A/outputs
 WS=$HOME/ws
 MODELS=(${MODELS:-magma internvla xiaomi gr00t spatialvla})
+declare -A NEED=([magma]=50 [internvla]=28 [xiaomi]=32 [gr00t]=28 [spatialvla]=32)   # ГБ свободных для старта
+declare -A SRV_GB=([internvla]=10 [xiaomi]=14 [gr00t]=10)                            # наш сервер на карте, ГБ
 COND=(pairs_q193g:noswap pairs_q193g:swap pairs_q193e:noswap pairs_q193e:swap)
-N=19300; SH=48
+N=19300; SH=48; NSH=$(( (N + SH - 1) / SH ))
 HANG_MIN=${HANG_MIN:-30}; MAX_TRIES=${MAX_TRIES:-6}; POLL=${POLL:-120}
+OOM_WAIT=${OOM_WAIT:-600}; CHUNK=${CHUNK:-24}
 STOPF=$WS/_q193_driver.stop
-rm -f "$STOPF"; echo $$ > $WS/_q193_driver.pid
-declare -a MI TRIES LASTMISS OOMWAIT
-for g in 0 1 2 3; do MI[$g]=0; TRIES[$g]=0; LASTMISS[$g]=-1; OOMWAIT[$g]=0; done
-OOM_WAIT=${OOM_WAIT:-600}   # 29.09: на ноде учится чужая модель (tmux 29i_kos) — OOM не считаем попыткой, ждём память
-declare -A METRICS_STARTED
+[ "$DRY" = 1 ] || rm -f "$STOPF"
+declare -A TRIES LASTMISS OOMWAIT OOMSEEN SKIP METRICS_STARTED
 
 log() { echo "$(date '+%m-%d %H:%M:%S') $*"; }
 
-missing() {  # vla assets order → число шардов без stats.yaml
+missing() {  # v a o → число шардов без stats.yaml
   local v=$1 a=$2 o=$3 k=0 m=0
   while [ $k -lt $N ]; do
     [ -f "$OUT/q193-$v-$a-$o-s$k/glob/vis_0_test/stats.yaml" ] || m=$((m+1))
@@ -45,9 +55,12 @@ missing() {  # vla assets order → число шардов без stats.yaml
   done
   echo $m
 }
-# Цепочка из одного спека: `bash -c "VLA=… ASSETS=… bash run_g10_magma.sh; "` делает exec, и присваивания
-# из cmdline пропадают (29.09: первая версия по cmdline решила, что цепочки нет, и стартовала карты подряд).
-# Поэтому ищем процесс run_g10_magma.sh и сверяем его окружение (/proc/<pid>/environ).
+first_missing() {  # v a o → индекс эпизода первого шарда без stats.yaml (N, если все есть)
+  local v=$1 a=$2 o=$3 k=0
+  while [ $k -lt $N ] && [ -f "$OUT/q193-$v-$a-$o-s$k/glob/vis_0_test/stats.yaml" ]; do k=$((k+SH)); done
+  echo $k
+}
+# цепочка из одного спека: `bash -c "VLA=… bash run_g10_magma.sh; "` делает exec — ищем run_g10_magma.sh по environ
 chain_pid() {  # v a o g
   local p e
   for p in $(pgrep -f -- "[r]un_g10_magma.sh"); do
@@ -57,11 +70,11 @@ chain_pid() {  # v a o g
   done
 }
 client_pid() { pgrep -f -- "[s]impler_env.eval --vla $1 --assets $2 .*--name q193-$1-$2-$3" | head -1; }
-logf()       { echo "$WS/logs_q193_$1_$2_$3_0.log"; }
+logf()       { echo "$WS/logs_q193_$1_$2_$3_$4.log"; }       # v a o start0
+lastlog()    { ls -t $WS/logs_q193_$1_$2_$3_*.log 2>/dev/null | head -1; }   # свежий лог (полный диапазон или кусок)
 
-srv_port() {  # g v → порт сервера политики (пусто у Magma/SpatialVLA)
-  case $2 in internvla) echo $((10093 + $1));; gr00t) echo $((5500 + $1 * 10));; xiaomi) echo $((10000 + $1 * 10));; esac
-}
+srv_port() { case $2 in internvla) echo $((10093 + $1));; gr00t) echo $((5500 + $1 * 10));; xiaomi) echo $((10000 + $1 * 10));; esac; }
+srv_alive() { local p; p=$(srv_port $1 $2); [ -n "$p" ] && (exec 3<>/dev/tcp/127.0.0.1/$p) 2>/dev/null; }
 stop_srv() {  # g v — гасим сервер этой модели на этой карте (по порту в argv, с проверкой cmdline)
   local g=$1 v=$2 p; p=$(srv_port $g $v); [ -z "$p" ] && return 0
   for par in $(pgrep -f -- "--port $p( |$)"); do
@@ -80,26 +93,26 @@ kill_client() {  # pid v a o — только если это наш клиен�
   return 0
 }
 gpu_util() { nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -i $1 2>/dev/null | tr -d ' '; }
-oom_in_log() {  # v a o — последний запуск (после последнего START_G10) упал по памяти?
-  awk 'BEGIN{IGNORECASE=1} /START_G10/{f=0} /out of memory|OutOfMemoryError|CUDA_ERROR_OUT_OF_MEMORY|DONE_G10.*rc=135/{f=1} END{exit !f}' \
-    "$(logf $1 $2 $3)" 2>/dev/null
+free_gb()  { nvidia-smi --query-gpu=memory.total,memory.used --format=csv,noheader,nounits -i $1 2>/dev/null \
+               | awk -F', ' '{printf "%d", ($1 - $2) / 1024}'; }
+oom_in_log() {  # файл лога — последний запуск (после последнего START_G10) упал по памяти?
+  awk 'BEGIN{IGNORECASE=1} /START_G10/{f=0} /out of memory|OutOfMemoryError|CUDA_ERROR_OUT_OF_MEMORY|DONE_G10.*rc=135/{f=1} END{exit !f}' "$1" 2>/dev/null
 }
 
-launch_gpu() {  # g v
-  local g=$1 v=$2 a=${COND[$1]%%:*} o=${COND[$1]##*:}
-  local spec="$a:$o:0:$N"
-  log "GPU$g: ЗАПУСК $v $spec (попытка $((TRIES[$g]+1)))"
+launch_gpu() {  # g v start end
+  local g=$1 v=$2 s=$3 e=$4 a=${COND[$1]%%:*} o=${COND[$1]##*:}
+  local spec="$a:$o:$s:$e" key="$1:$2"
+  log "GPU$g: ЗАПУСК $v $spec (попытка $(( ${TRIES[$key]:-0} + 1 )), свободно $(free_gb $g) ГБ)"
+  [ "$DRY" = 1 ] && return 0
   case $v in
     magma)       env PROG=q193 VLA=magma NODE=CUSTOM "CUSTOM$g=$spec" bash $S/launch_g10_node.sh ;;
     spatialvla)  env A2A_ENV=spatialvla_act2answer PROG=q193 VLA=spatialvla NODE=CUSTOM "CUSTOM$g=$spec" bash $S/launch_g10_node.sh ;;
     internvla)   env PROG=q193 NODE=CUSTOM "CUSTOM$g=$spec" bash $S/launch_g10_internvla.sh ;;
     gr00t|xiaomi) env PROG=q193 VLA=$v NODE=CUSTOM "CUSTOM$g=$spec" bash $S/launch_g10_srv.sh ;;
   esac 2>&1 | sed "s/^/    [launch GPU$g] /"
-  TRIES[$g]=$((TRIES[$g]+1))
-  # разнесённый старт: одновременный старт 4 процессов вешает двоих намертво (11.09) —
-  # ждём первых шагов симуляции (elapsed_steps после последнего START_G10 в логе; util карты
-  # не годится — 100 % уже на загрузке весов), не дольше 12 мин, и только потом трогаем следующую
-  local i u lf; lf=$(logf $v $a $o)
+  TRIES[$key]=$(( ${TRIES[$key]:-0} + 1 ))
+  # разнесённый старт (одновременный старт вешает клиентов, 11.09): ждём первых шагов симуляции в логе, ≤12 мин
+  local i u lf; lf=$(logf $v $a $o $s)
   for i in $(seq 1 48); do
     sleep 15
     if awk '/START_G10/{f=0} /elapsed_steps/{f=1} END{exit !f}' "$lf" 2>/dev/null; then
@@ -110,71 +123,88 @@ launch_gpu() {  # g v
   log "GPU$g: за 12 мин нет шагов симуляции — пусть решает детектор зависаний"
 }
 
-log "СТАРТ драйвера q193, модели: ${MODELS[*]}, pid $$, узел $(hostname | cut -c1-24)"
+log "СТАРТ драйвера q193 v3 (учёт памяти), модели: ${MODELS[*]}, pid $$, DRY=$DRY, узел $(hostname | cut -c1-24)"
 while :; do
   [ -f "$STOPF" ] && { log "STOP-файл — выхожу (прогоны не трогаю)"; exit 0; }
-  status=""
+  status=""; alldone=1
   for g in 0 1 2 3; do
     a=${COND[$g]%%:*}; o=${COND[$g]##*:}
-    while [ ${MI[$g]} -lt ${#MODELS[@]} ]; do
-      v=${MODELS[${MI[$g]}]}
-      cp_=$(chain_pid $v $a $o $g)
+    # 1) идёт ли на карте наша цепочка (любая модель)?
+    run=""
+    for v in "${MODELS[@]}"; do [ -n "$(chain_pid $v $a $o $g)" ] && { run=$v; break; }; done
+    if [ -n "$run" ]; then
+      alldone=0
+      cl=$(client_pid $run $a $o); lf=$(lastlog $run $a $o)
+      if [ -n "$cl" ] && [ -n "$lf" ]; then
+        age=$(( ( $(date +%s) - $(stat -c %Y "$lf") ) / 60 ))
+        if [ $age -ge $HANG_MIN ]; then
+          log "GPU$g: ⚠ $run $a $o — лог молчит $age мин, убиваю клиента $cl (цепочка выйдет, перезапущу)"
+          [ "$DRY" = 1 ] || kill_client $cl $run $a $o || log "GPU$g: pid $cl не прошёл проверку cmdline — не трогаю"
+        fi
+      fi
+      status+=" | GPU$g $run осталось $(missing $run $a $o)/$NSH"
+      continue
+    fi
+    # 2) на карте ничего нашего не идёт — выбираем модель
+    now=$(date +%s); top=""; pick=""; pick_full=0; why=""
+    for v in "${MODELS[@]}"; do
+      key="$g:$v"
+      [ -n "${SKIP[$key]:-}" ] && continue
       m=$(missing $v $a $o)
-      if [ "$m" -eq 0 ] && [ -z "$cp_" ]; then          # условие готово → следующая модель
-        log "GPU$g: ГОТОВО $v $a $o"
-        stop_srv $g $v
-        MI[$g]=$((MI[$g]+1)); TRIES[$g]=0; LASTMISS[$g]=-1
-        continue
+      if [ "$m" -eq 0 ]; then srv_alive $g $v && { [ "$DRY" = 1 ] || stop_srv $g $v; }; continue; fi
+      alldone=0
+      # OOM в последнем запуске этого драйвера → пауза (раз на запуск), попыткой не считается
+      if [ "${LASTMISS[$key]:--1}" -ge 0 ] && [ -z "${OOMSEEN[$key]:-}" ] && oom_in_log "$(lastlog $v $a $o)"; then
+        OOMWAIT[$key]=$((now + OOM_WAIT)); OOMSEEN[$key]=1
+        log "GPU$g: ⚠ $v $a $o упал по памяти (OOM) — эту модель на карте не трогаю $((OOM_WAIT / 60)) мин, попытка не считается"
       fi
-      if [ -z "$cp_" ]; then                              # цепочки нет, а шарды недоделаны → (пере)запуск
-        now=$(date +%s)
-        if [ "${OOMWAIT[$g]}" -gt 0 ]; then               # после OOM ждём, пока освободится память карты
-          if [ $now -lt ${OOMWAIT[$g]} ]; then status+=" | GPU$g $v ждёт память, осталось $m"; break; fi
-          OOMWAIT[$g]=0; LASTMISS[$g]=$m
-          launch_gpu $g $v; TRIES[$g]=$((TRIES[$g]-1))   # повтор после OOM попыткой не считается
-          status+=" | GPU$g $v осталось $m/$(( (N+SH-1)/SH ))"
-          break
-        fi
-        if [ "${LASTMISS[$g]}" -ge 0 ] && oom_in_log $v $a $o; then   # упал по памяти (чужой процесс на карте?)
-          OOMWAIT[$g]=$((now + OOM_WAIT))
-          log "GPU$g: ⚠ $v $a $o упал по памяти (OOM) — повтор через $((OOM_WAIT / 60)) мин, попытка не считается; карта: $(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader -i $g)"
-          status+=" | GPU$g $v ждёт память, осталось $m"
-          break
-        fi
-        [ "${LASTMISS[$g]}" -ge 0 ] && [ "$m" -lt "${LASTMISS[$g]}" ] && TRIES[$g]=0
-        if [ ${TRIES[$g]} -ge $MAX_TRIES ]; then
-          log "GPU$g: ❌ $v $a $o — $MAX_TRIES запусков без прогресса, осталось $m шардов; ПРОПУСКАЮ модель на карте"
-          tail -5 "$(logf $v $a $o)" 2>/dev/null | sed "s/^/    /"
-          stop_srv $g $v; MI[$g]=$((MI[$g]+1)); TRIES[$g]=0; LASTMISS[$g]=-1
-          continue
-        fi
-        LASTMISS[$g]=$m
-        launch_gpu $g $v
-      else                                                # идёт: проверка зависания по логу
-        cl=$(client_pid $v $a $o); lf=$(logf $v $a $o)
-        if [ -n "$cl" ] && [ -f "$lf" ]; then
-          age=$(( ( $(date +%s) - $(stat -c %Y "$lf") ) / 60 ))
-          if [ $age -ge $HANG_MIN ]; then
-            log "GPU$g: ⚠ $v $a $o — лог молчит $age мин, убиваю клиента $cl (цепочка выйдет, перезапущу)"
-            kill_client $cl $v $a $o || log "GPU$g: pid $cl не прошёл проверку cmdline — не трогаю"
-          fi
-        fi
-      fi
-      status+=" | GPU$g $v осталось $m/$(( (N+SH-1)/SH ))"
+      [ -z "$top" ] && top=$v
+      if [ "$now" -lt "${OOMWAIT[$key]:-0}" ]; then why+=" $v:ждёт-после-OOM"; continue; fi
+      # память: свободно + наши простаивающие серверы ДРУГИХ моделей на этой карте (их погасим)
+      fr=$(free_gb $g); rec=0
+      for w in internvla xiaomi gr00t; do [ "$w" != "$v" ] && srv_alive $g $w && rec=$((rec + SRV_GB[$w])); done
+      if [ $((fr + rec)) -lt "${NEED[$v]}" ]; then why+=" $v:мало-памяти(${fr}+${rec}<${NEED[$v]})"; continue; fi
+      pick=$v; [ "$v" = "$top" ] && pick_full=1
       break
     done
-    [ ${MI[$g]} -ge ${#MODELS[@]} ] && status+=" | GPU$g — всё"
+    if [ -z "$pick" ]; then
+      [ -n "$top" ] && status+=" | GPU$g ждёт:$why" || status+=" | GPU$g — всё"
+      continue
+    fi
+    key="$g:$pick"; m=$(missing $pick $a $o)
+    # прогресс с прошлого запуска → счётчик попыток с нуля; OOM-повтор попыткой не считается
+    [ "${LASTMISS[$key]:--1}" -ge 0 ] && [ "$m" -lt "${LASTMISS[$key]}" ] && TRIES[$key]=0
+    if [ -n "${OOMSEEN[$key]:-}" ]; then TRIES[$key]=$(( ${TRIES[$key]:-0} > 0 ? ${TRIES[$key]} - 1 : 0 )); unset "OOMSEEN[$key]"; fi
+    if [ "${TRIES[$key]:-0}" -ge $MAX_TRIES ]; then
+      log "GPU$g: ❌ $pick $a $o — $MAX_TRIES запусков без прогресса, осталось $m шардов; ПРОПУСКАЮ модель на карте"
+      tail -5 "$(lastlog $pick $a $o)" 2>/dev/null | sed "s/^/    /"
+      SKIP[$key]=1; [ "$DRY" = 1 ] || stop_srv $g $pick
+      continue
+    fi
+    # гасим наши простаивающие серверы других моделей на карте
+    for w in internvla xiaomi gr00t; do [ "$w" != "$pick" ] && srv_alive $g $w && { [ "$DRY" = 1 ] || stop_srv $g $w; }; done
+    LASTMISS[$key]=$m
+    if [ $pick_full = 1 ]; then
+      launch_gpu $g $pick 0 $N
+    else
+      s=$(first_missing $pick $a $o); e=$(( s + CHUNK * SH )); [ $e -gt $N ] && e=$N
+      log "GPU$g: подмена — $top не помещается ($why), даю карте $pick кусок [$s,$e)"
+      launch_gpu $g $pick $s $e
+    fi
+    status+=" | GPU$g $pick осталось $m/$NSH"
   done
-  # метрики: модель, которую прошли все 4 карты
-  minmi=${MI[0]}; for g in 1 2 3; do [ ${MI[$g]} -lt $minmi ] && minmi=${MI[$g]}; done
-  for ((j=0; j<minmi; j++)); do
-    v=${MODELS[$j]}
+  # метрики: модель, у которой готовы все 4 условия
+  for v in "${MODELS[@]}"; do
     [ -n "${METRICS_STARTED[$v]:-}" ] && continue
+    done4=1
+    for g in 0 1 2 3; do a=${COND[$g]%%:*}; o=${COND[$g]##*:}; [ "$(missing $v $a $o)" -eq 0 ] || { done4=0; break; }; done
+    [ $done4 = 1 ] || continue
     METRICS_STARTED[$v]=1
     log "МЕТРИКИ $v → $WS/_q193_metrics_$v.log"
-    (setsid nohup bash $WS/_q193_metrics.sh $v > $WS/_q193_metrics_$v.log 2>&1 < /dev/null &)
+    [ "$DRY" = 1 ] || (setsid nohup bash $WS/_q193_metrics.sh $v > $WS/_q193_metrics_$v.log 2>&1 < /dev/null &)
   done
   log "статус$status"
-  [ $minmi -ge ${#MODELS[@]} ] && { log "ALL_DONE q193: все модели на всех картах"; exit 0; }
+  [ "$DRY" = 1 ] && exit 0
+  [ $alldone = 1 ] && { log "ALL_DONE q193: все модели на всех картах"; exit 0; }
   sleep $POLL
 done

@@ -172,13 +172,14 @@ def main():
         mdir = MODELS[vla]
         rows_by = {}
         for axis, (fname, _) in AXES.items():
-            rs = read_rows(args.export_root / "pairs" / mdir / fname, q193)
-            if args.with_old:
-                rs += read_rows(args.old_root / "pairs" / mdir / fname, old7)
-            rows_by[axis] = rs
+            rows_by[axis] = read_rows(args.export_root / "pairs" / mdir / fname, q193)
+        # модель без выгрузки q193 пропускаем ЦЕЛИКОМ: иначе --with-old выдавал её раздел из 7 старых вопросов (30.09)
         if not any(rows_by.values()):
-            print(f"{vla}: нет выгрузки в {args.export_root} — пропуск")
+            print(f"{vla}: нет выгрузки q193 в {args.export_root} — пропуск")
             continue
+        if args.with_old:
+            for axis, (fname, _) in AXES.items():
+                rows_by[axis] += read_rows(args.old_root / "pairs" / mdir / fname, old7)
         pull = load_pull(vla)
         table = []
         for axis, rs in rows_by.items():

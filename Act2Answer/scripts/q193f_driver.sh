@@ -41,6 +41,7 @@ MODELS=(${MODELS:-magma})
 declare -A NEED=([magma]=50 [internvla]=28 [xiaomi]=32 [gr00t]=28 [spatialvla]=32)   # ГБ свободных для старта
 declare -A SRV_GB=([internvla]=10 [xiaomi]=14 [gr00t]=10)                            # наш сервер на карте, ГБ
 # Две ноды по 4 карты: каждой — свои 4 условия (assets:order), переменная COND_LIST (порядок = GPU0..3).
+GPUS=(${GPUS:-0 1 2 3})   # карты под драйвером (18.10: на h100q12 GPU3 отдана параллельному проекту)
 COND=(${COND_LIST:?нужен COND_LIST="focus_q193fa:noswap focus_q193fa:swap ..."})
 NODE_TAG=${NODE_TAG:-$(hostname | cut -c9-16)}
 SH=48
@@ -133,7 +134,7 @@ log "СТАРТ драйвера q193f (все пары FOCUS/VisBias, учёт 
 while :; do
   [ -f "$STOPF" ] && { log "STOP-файл — выхожу (прогоны не трогаю)"; exit 0; }
   status=""; alldone=1
-  for g in 0 1 2 3; do
+  for g in "${GPUS[@]}"; do
     a=${COND[$g]%%:*}; o=${COND[$g]##*:}
     # 1) идёт ли на карте наша цепочка (любая модель)?
     run=""
@@ -203,7 +204,7 @@ while :; do
   for v in "${MODELS[@]}"; do
     [ -n "${METRICS_STARTED[$v]:-}" ] && continue
     done4=1
-    for g in 0 1 2 3; do a=${COND[$g]%%:*}; o=${COND[$g]##*:}; fm_update $v $a $o; [ $NMISS -eq 0 ] || { done4=0; break; }; done
+    for g in "${GPUS[@]}"; do a=${COND[$g]%%:*}; o=${COND[$g]##*:}; fm_update $v $a $o; [ $NMISS -eq 0 ] || { done4=0; break; }; done
     [ $done4 = 1 ] || continue
     METRICS_STARTED[$v]=1
     log "ГОТОВЫ условия ноды $NODE_TAG для $v (метрики — вручную после обеих нод: ~/ws/_q193f_metrics.sh $v)"

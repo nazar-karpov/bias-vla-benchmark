@@ -1,0 +1,107 @@
+{
+  "checked_utc": "2026-11-01T17:44:28.836510+00:00",
+  "client_pid": 2835227,
+  "unchanged_server_pid": 1468604,
+  "phase_summary": {
+    "before_restart": {
+      "shards": 27,
+      "median_seconds": 419.0,
+      "mean_seconds": 405.9259259259259,
+      "median_ep_hour": 412.4,
+      "min_seconds": 235.0,
+      "max_seconds": 447.0
+    },
+    "after_restart": {
+      "shards": 51,
+      "median_seconds": 172.0,
+      "mean_seconds": 172.33333333333334,
+      "median_ep_hour": 1004.7,
+      "min_seconds": 169.0,
+      "max_seconds": 183.0
+    }
+  },
+  "numa_intervals": {
+    "remote": {
+      "get_action": 1.0646,
+      "env_step": 0.9909
+    },
+    "local": {
+      "get_action": 1.0664,
+      "env_step": 1.0159
+    }
+  },
+  "h100q10": {
+    "status_utc": "2026-11-01T17:43:56",
+    "gpus": [
+      {
+        "gpu": 0,
+        "remaining_shards": 581,
+        "total_shards": 6063,
+        "ep_hour": 959,
+        "eta_hours": 29.1,
+        "eta_moscow": "2026-11-03T01:49:21.250000"
+      },
+      {
+        "gpu": 1,
+        "remaining_shards": 578,
+        "total_shards": 6063,
+        "ep_hour": 959,
+        "eta_hours": 28.9,
+        "eta_moscow": "2026-11-03T01:40:20.500000"
+      },
+      {
+        "gpu": 2,
+        "remaining_shards": 405,
+        "total_shards": 6000,
+        "ep_hour": 1007,
+        "eta_hours": 19.3,
+        "eta_moscow": "2026-11-02T16:02:41"
+      },
+      {
+        "gpu": 3,
+        "remaining_shards": 2092,
+        "total_shards": 6000,
+        "ep_hour": 959,
+        "eta_hours": 104.7,
+        "eta_moscow": "2026-11-06T05:28:39"
+      }
+    ]
+  },
+  "h100q11": {
+    "status_utc": "2026-11-01T17:44:25",
+    "gpus": [
+      {
+        "gpu": 0,
+        "remaining_shards": 3817,
+        "total_shards": 6063,
+        "ep_hour": 1007,
+        "eta_hours": 182.0,
+        "eta_moscow": "2026-11-09T10:42:14.904762"
+      },
+      {
+        "gpu": 1,
+        "remaining_shards": 3543,
+        "total_shards": 6063,
+        "ep_hour": 1007,
+        "eta_hours": 168.9,
+        "eta_moscow": "2026-11-08T21:38:31.285714"
+      },
+      {
+        "gpu": 2,
+        "remaining_shards": 3407,
+        "total_shards": 6000,
+        "ep_hour": 1007,
+        "eta_hours": 162.4,
+        "eta_moscow": "2026-11-08T15:09:31.095238"
+      },
+      {
+        "gpu": 3,
+        "remaining_shards": 3368,
+        "total_shards": 6000,
+        "ep_hour": 1007,
+        "eta_hours": 160.6,
+        "eta_moscow": "2026-11-08T13:17:57.952381"
+      }
+    ]
+  }
+}

@@ -1,0 +1,94 @@
+[
+  {
+    "gpu": 0,
+    "model": "spatialvla",
+    "assets": "focus_q193fa",
+    "order": "noswap",
+    "start": 0,
+    "n": 48,
+    "ep_len": 80,
+    "stats_size": 30933,
+    "traj_shapes": {
+      "cube_xyz": [
+        48,
+        91,
+        3
+      ],
+      "action": [
+        48,
+        80,
+        7
+      ],
+      "action_t0": []
+    }
+  },
+  {
+    "gpu": 1,
+    "model": "spatialvla",
+    "assets": "focus_q193fa",
+    "order": "swap",
+    "start": 0,
+    "n": 48,
+    "ep_len": 80,
+    "stats_size": 30924,
+    "traj_shapes": {
+      "cube_xyz": [
+        48,
+        91,
+        3
+      ],
+      "action": [
+        48,
+        80,
+        7
+      ],
+      "action_t0": []
+    }
+  },
+  {
+    "gpu": 2,
+    "model": "internvla",
+    "assets": "focus_q193fb",
+    "order": "noswap",
+    "start": 286464,
+    "n": 48,
+    "ep_len": 80,
+    "stats_size": 30984,
+    "traj_shapes": {
+      "cube_xyz": [
+        48,
+        91,
+        3
+      ],
+      "action": [
+        48,
+        80,
+        7
+      ],
+      "action_t0": []
+    }
+  },
+  {
+    "gpu": 3,
+    "model": "spatialvla",
+    "assets": "focus_q193fb",
+    "order": "swap",
+    "start": 0,
+    "n": 48,
+    "ep_len": 80,
+    "stats_size": 31150,
+    "traj_shapes": {
+      "cube_xyz": [
+        48,
+        91,
+        3
+      ],
+      "action": [
+        48,
+        80,
+        7
+      ],
+      "action_t0": []
+    }
+  }
+]

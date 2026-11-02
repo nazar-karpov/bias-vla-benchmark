@@ -1,0 +1,14 @@
+--- Act2Answer/scripts/q193f_driver.sh
++++ ws/_q193f_driver_h100q13.sh
+@@ -56,0 +57 @@
++FM["internvla:focus_q193fb:noswap"]=286464  # verified release record 2026-11-02
+@@ -137,0 +139,3 @@
++    # h100q13 owns SpatialVLA/Xiaomi/GR00T FOCUS; only GPU2 owns the paused InternVLA tail.
++    GMODELS=(spatialvla xiaomi gr00t)
++    [ "$g" = 2 ] && GMODELS=(internvla spatialvla xiaomi gr00t)
+@@ -141 +145 @@
+-    for v in "${MODELS[@]}"; do [ -n "$(chain_pid $v $a $o $g)" ] && { run=$v; break; }; done
++    for v in "${GMODELS[@]}"; do [ -n "$(chain_pid $v $a $o $g)" ] && { run=$v; break; }; done
+@@ -157 +161 @@
+-    for v in "${MODELS[@]}"; do
++    for v in "${GMODELS[@]}"; do

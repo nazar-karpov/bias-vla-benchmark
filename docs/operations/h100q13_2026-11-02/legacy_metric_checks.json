@@ -1,0 +1,24 @@
+[
+  {
+    "command": [
+      "python3",
+      "/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/build_metrics_table.py",
+      "--out-dir",
+      "/tmp/h100q13_legacy_metrics_check"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/build_metrics_table.py\", line 290, in <module>\n    main()\n  File \"/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/build_metrics_table.py\", line 271, in main\n    neg_of, cat_of = load_meta()\n  File \"/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/build_metrics_table.py\", line 61, in load_meta\n    for line in PAIRS.read_text().splitlines():\n  File \"/usr/lib/python3.10/pathlib.py\", line 1134, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/usr/lib/python3.10/pathlib.py\", line 1119, in open\n    return self._accessor.open(self, mode, buffering, encoding, errors,\nFileNotFoundError: [Errno 2] No such file or directory: '/home/user/bias_benchmark/datasets/PAIRS/pairs.json'\n"
+  },
+  {
+    "command": [
+      "python3",
+      "/workspace/moskalenko/bias-vla-benchmark-main/Act2Answer/scripts/compare_designs.py",
+      "--dir",
+      "/tmp/h100q13_legacy_metrics_check"
+    ],
+    "returncode": 0,
+    "stdout": "/tmp/h100q13_legacy_metrics_check/metrics_comparison.csv: 198 строк\n  magma       эффектов≥5пп(пара):  23  знак совпал с одной картинкой: 18/23  медиана усиления: ×15.1\n  paligemma   эффектов≥5пп(пара):  41  знак совпал с одной картинкой: 32/41  медиана усиления: ×6.7\n  qwenbase    эффектов≥5пп(пара):  31  знак совпал с одной картинкой: 23/31  медиана усиления: ×4.9\n",
+    "stderr": ""
+  }
+]

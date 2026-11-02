@@ -1,0 +1,43 @@
+{
+  "node": "h100q13",
+  "job": "6d3bada7-8a92-49ba-976a-04574dd9c6ad",
+  "created_utc": "2026-11-02T14:15:42.633234+00:00",
+  "gpus": {
+    "0": {
+      "condition": "focus_q193fa:noswap",
+      "models": [
+        "spatialvla",
+        "xiaomi",
+        "gr00t"
+      ]
+    },
+    "1": {
+      "condition": "focus_q193fa:swap",
+      "models": [
+        "spatialvla",
+        "xiaomi",
+        "gr00t"
+      ]
+    },
+    "2": {
+      "condition": "focus_q193fb:noswap",
+      "models": [
+        "internvla_tail_1536",
+        "spatialvla",
+        "xiaomi",
+        "gr00t"
+      ]
+    },
+    "3": {
+      "condition": "focus_q193fb:swap",
+      "models": [
+        "spatialvla",
+        "xiaomi",
+        "gr00t"
+      ]
+    }
+  },
+  "reserved_h100q10_gpu2": "Do not use; belongs to other experiments",
+  "full_episodes_per_focus_model": 1158000,
+  "global_q193f_episodes_per_model": 2316000
+}
